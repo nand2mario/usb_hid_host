@@ -1,0 +1,148 @@
+#! /usr/bin/perl
+# UKP assembler
+
+$BRAM=1;
+
+%inst = ("nop"   , 0,  "ldi"  , 1,  "start", 2,  "out4", 3,
+		 "out0"  , 4,  "hiz"  , 5,  "outb" , 6,  "ret" , 7, 
+		 "bz"    , 8,  "bc"   , 9,  "bnak" , 10, "djnz", 11,
+		 "toggle", 12, "save" , 12, "in"   , 13, "wait" , 14, "jmp", 15 );
+
+open(SRC, "ukp.s") || die;
+while (&getline) {				# calculate all label addresses
+	if (/^(\w+):/) {
+		if (defined($label{$1})) {
+			printf STDERR "$_ already defined\n";
+			exit 1;
+		}
+		$pc = $pc + 3 & ~3;
+		$label{$1} = $pc;
+		printf "pc=%03x\t%s\n", $pc, $1;
+	}
+	else {
+		@_ = split;
+		unless (defined($inst{$_[0]})) {
+			printf STDERR "syntax error: $_\n";
+			exit 1;
+		}
+		$code = $inst{$_[0]};
+		if($code==15) {
+			$pc += 4;
+		} elsif ($code == 1 || $code >= 8 && $code < 12 || $code == 3 || $code == 6 || $code == 12) {
+			$pc += 3;
+		} else {
+			$pc += 1;
+		}
+	}
+}
+seek(SRC, 0, SEEK_END);
+$size = $pc;
+$pc = 0;
+open(DST, "> usb_hid_host_rom.v") || die;
+select DST;
+if ($BRAM) {			# use BRAM
+	print <<EOF;
+module usb_hid_host_rom(clk, adr, data);
+\tinput clk;
+\tinput [13:0] adr;
+\toutput [3:0] data;
+\treg [3:0] data; 
+\treg [3:0] mem [$size];
+\tinitial \$readmemh("usb_hid_host_rom.hex", mem);
+\talways @(posedge clk) data <= mem[adr];
+endmodule
+EOF
+close(DST);
+open(DST, "> usb_hid_host_rom.hex") || die;
+select DST;	
+} else {				# embed in code
+	print <<EOF;
+module usb_hid_host_rom(clk, adr, data);
+\tinput clk;
+\tinput [13:0] adr;
+\toutput [3:0] data;
+\treg [3:0] data; 
+\talways @(posedge clk) begin
+\t\tcase (adr)
+EOF
+}
+
+while (&getline) {
+	if (/^(\w+):/) {						# label
+		putline(0) while $pc & 3;
+		if (not $BRAM) {
+			$scd = "  // $_";
+			printf "\t\t\t\t\t\t\t\t%s\n", $scd;  $scd="";
+		}
+	}
+	else {
+		$scd = " // $_";
+		# printf STDERR "$_\n";
+		# $_ =~ s/^\s+|\s+$//g;				# trim
+		@_ = split;							# split on whitespace
+		$code = $inst{$_[0]};
+		# printf STDERR "$_   $_[0] -> $code\n";
+		if ($code<16) {putline($code); $scd="";}
+		if ($code==12) {
+			if ($_[0] eq "toggle") {
+				putline(15);
+				putline(15);
+			} else {						# save
+				if (scalar(@_) != 3) {
+					printf STDERR "Malformed instruction: $_";
+					exit 1;
+				}
+				putline($_[1]);
+				putline($_[2]);
+			}
+		}
+		if ($code == 1 || $code == 3 || $code == 6) {		# ldi/out4/outb/
+			if (substr($_[1], 0, 2) eq "0x") {
+				$v = hex($_[1]);
+			} else {
+				$v = $_[1];
+			}
+			putline($v & 15);
+			putline($v >> 4);
+		}
+
+		elsif ($code >= 8 && $code < 12 || $code == 15) {	# jump
+			unless (defined($label{$_[1]})) {
+				printf STDERR "$_[1] not defined\n";
+				exit 1;
+			}
+			$adr = $label{$_[1]} >> 2;
+			putline($adr & 15);
+			putline(($adr >> 4) & 15);
+			if($code == 15) {
+				putline(($adr >> 8) & 15);
+			}
+		}
+	}
+}
+close SRC;
+if (not $BRAM) { print "\t\t\tdefault: data = 4'hX;\n\t\tendcase\n\tend\nendmodule\n";}
+close DST;
+system("mv ./usb_hid_host_rom.v ..");
+if ($BRAM) {
+	system("mv ./usb_hid_host_rom.hex ..");
+}
+exit 0;
+
+sub getline {
+	do {
+		return 0 unless $_ = <SRC>;
+		chomp;
+		s/\s*;.*$//;
+	} while (/^\s*$/);
+	1;
+}
+
+sub putline {
+	if ($BRAM) {
+		printf "%02x\n", shift(@_);
+		$pc++;
+	} else {
+		printf "\t\t\t10'h%03x: data = 4'h%x;%s\n", $pc++, shift(@_), $scd;
+	}
+}
