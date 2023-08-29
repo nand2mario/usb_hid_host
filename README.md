@@ -2,18 +2,17 @@
 
 nand2mario, 8/2023
 
-This is a small FPGA core supporting USB keyboards, mice and gamepads in Verilog. It is designed with retro gaming projects in mind. The biggest benefit is it is all-in-one and does not require a CPU to operate. And it is quite small (uses <300 LUTs, <250 registers and 1 BRAM block).
+This is a compact Verilog-based FPGA core designed to support USB keyboards, mice and gamepads. It is designed mainly for FPGA retro gaming and computing projects. The most significant advantage is in its all-in-one design. It does not require a CPU to work. And it is quite small (<300 LUTs, <250 registers and 1 BRAM block).
 
-To use usb_hid_host, just pick up `usb_hid_host.v`, `usb_hid_host_rom.v` and `usb_hid_host_rom.hex`. The module interface in `usb_hid_host.v` should be documented well enough to get you started.
+To use usb_hid_host, simply add `usb_hid_host.v`, `usb_hid_host_rom.v` and `usb_hid_host_rom.hex` to your project. The module interface in `usb_hid_host.v` should be sufficiently documented to get you started.
 
-See [usb_hid_host.md](doc/usb_hid_host.md) if you are interested in the design details of the core.
+Please refer to [usb_hid_host.md](doc/usb_hid_host.md) for a more comprehensive introduction to the design of the core.
 
 ## Sample project
 
-The sample project works on Sipeed Tang Nano 20K. Just open `usb_hid_proj.gprj` in Gowin IDE. Connect your USB devices and expect something like the following.
+There is currently a sample project that works on Sipeed Tang Nano 20K. Just open `usb_hid_proj.gprj` in Gowin IDE. Connect your USB devices and expect something like the following.
 
 <img src='doc/usb_hid_host_demo.png' width=450> <img src='doc/usb_hid_host_setup.jpg' width=380>
-
 
 ## Future Improvements
 
