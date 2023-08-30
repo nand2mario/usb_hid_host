@@ -16,8 +16,11 @@ There is currently a sample project that works on Sipeed Tang Nano 20K. Just ope
 
 ## Future Improvements
 
-The following are potential improvements to be done,
+* Support more boards (icesugar pro, arty a7/s7...)
 * More than one device on a port (USB hubs).
 * Full-speed devices.
 * Testing more types of devices.
 
+## Credit
+
+* Based on [hi631's work](https://github.com/hi631/tang-nano-9K/tree/master/NES) supporting USB gamepad on Tang Nano 9K.
