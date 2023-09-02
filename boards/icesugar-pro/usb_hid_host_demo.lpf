@@ -14,3 +14,21 @@ LOCATE      COMP "usbdm"        SITE "G4";
 IOBUF       PORT "usbdm"        IO_TYPE=LVCMOS33;
 LOCATE      COMP "usbdp"        SITE "G3";
 IOBUF       PORT "usbdp"        IO_TYPE=LVCMOS33;
+
+LOCATE      COMP "leds[0]"      SITE "E4";
+IOBUF       PORT "leds[0]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[1]"      SITE "D4";
+IOBUF       PORT "leds[1]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[2]"      SITE "D5";
+IOBUF       PORT "leds[2]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[3]"      SITE "R7";
+IOBUF       PORT "leds[3]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[4]"      SITE "E3";
+IOBUF       PORT "leds[4]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[5]"      SITE "C3";
+IOBUF       PORT "leds[5]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[6]"      SITE "C4";
+IOBUF       PORT "leds[6]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[7]"      SITE "R8";
+IOBUF       PORT "leds[7]"      IO_TYPE=LVCMOS33;
+

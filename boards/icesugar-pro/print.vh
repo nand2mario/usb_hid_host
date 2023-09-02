@@ -104,18 +104,24 @@ wire uart_bz;
 wire uart_txp;
 uart_tx_V2 tx(print_clk, print_seq[seq_head], uart_en, uart_bz, uart_txp);
 
+reg [7:0] total;
+// assign leds = total;
+assign leds = ~cnt[22:15];
+
 //always block to send the data via UART
 always@(posedge print_clk)begin
     uart_en<=1'b0;
     if(uart_en && uart_bz)
         seq_head<=seq_head+8'd1;
-    if(seq_head!=seq_tail && !uart_bz)
+    if(seq_head!=seq_tail && !uart_bz) begin
         uart_en<=1'b1;
+        total <= total + 1;
+    end
 end
 
 task int_print(
-    input[1023:0] strin,//max 128 characters
-    input[7:0] type_length //8bit width to show 128 characters
+    input[1023:0] strin,    //max 128 characters
+    input[7:0] type_length  //8bit width to show 128 characters
 );
 begin    
     if(print_state==PRINT_IDLE_STATE)begin//print when busy will be ignored
@@ -132,7 +138,7 @@ begin
     end
 end
 
-// `define print(a,b) int_print({>>{a}},b)
-`define print(a,b) int_print({a} << (1024-$bits(a)), b)
+// `define print(a,b) int_print({>>{a}}, b)
+`define print(a,b) int_print((a) << (1024-$bits(a)), b)
 
 endtask

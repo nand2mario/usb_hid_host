@@ -1,0 +1,9 @@
+
+read_verilog top.v
+read_verilog clock.v
+read_verilog uart_tx_V2.v
+read_verilog usb_hid_host.v
+read_verilog usb_hid_host_rom.v
+
+synth_ecp5 -top top -json usb_hid_host_demo.json
+

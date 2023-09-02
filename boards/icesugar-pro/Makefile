@@ -23,6 +23,6 @@ prog: ${TARGET}.svf
 	icesprog $(TARGET).bit
 
 clean:
-	rm -f *.svf *.bit *.config *.ys *.json
+	rm -f *.svf *.bit *.config *.json
 
 .PHONY: prog clean
