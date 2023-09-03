@@ -40,61 +40,52 @@ assign hex_lib[4'hE] = 8'h65;
 assign hex_lib[4'hF] = 8'h66;
 
 //always block to handle the print task
-always@(posedge print_clk)begin
-    last_spin_state<=spin_state;
+always @(posedge print_clk) begin
+    last_spin_state <= spin_state;
 
-    case(print_state)
-        PRINT_IDLE_STATE:begin//IDLE, check if spin_state is changed
-            if(spin_state!=last_spin_state)begin
-                print_state<=PRINT_WAIT_STATE;
-            end
+    case (print_state)
+        PRINT_IDLE_STATE: begin     //IDLE, check if spin_state is changed
+            if (spin_state != last_spin_state)
+                print_state <= PRINT_WAIT_STATE;
         end
-        PRINT_WAIT_STATE:begin//WAIT, wait 1 clk then start to fill print_seq
-            print_state<=PRINT_WORK_STATE;
-            if(print_type==STR)
-                print_buffer_pointer<=7'd127;
-            else
-                print_buffer_pointer<=7'd127;
+        PRINT_WAIT_STATE: begin     //WAIT, wait 1 clk then start to fill print_seq
+            print_state <= PRINT_WORK_STATE;
+            print_buffer_pointer <= 7'd127;
         end
-        PRINT_WORK_STATE:begin//WORK, fill print_seq
-            if(print_type==STR)begin//type is string, fill as it is
-                if(print_buffer[
-                    print_buffer_pointer*8+7 -: 8
-                ]!=8'd0)begin
-                    print_seq[seq_tail]<=print_buffer[
+        PRINT_WORK_STATE: begin     //WORK, fill print_seq
+            if (print_type == STR) begin    //type is string, fill as it is
+                if (print_buffer[print_buffer_pointer*8+7 -: 8] != 8'd0) begin
+                    print_seq[seq_tail] <= print_buffer[
                         print_buffer_pointer*8+7 -: 8
                     ];
-                    seq_tail<=seq_tail+8'd1;
-                end else begin
-                    print_state<=PRINT_IDLE_STATE;
-                end
+                    seq_tail <= seq_tail + 8'd1;
+                end else 
+                    print_state <= PRINT_IDLE_STATE;
 
-                print_buffer_pointer<=print_buffer_pointer-7'd1;
+                print_buffer_pointer <= print_buffer_pointer-7'd1;
 
-                if(print_buffer_pointer==7'd0)begin
-                    print_state<=PRINT_IDLE_STATE;
+                if (print_buffer_pointer==7'd0) begin
+                    print_state <= PRINT_IDLE_STATE;
                 end
-            end else begin //type is data, fill as hex
-                print_seq[seq_tail]<=hex_lib[print_buffer[
-                    print_buffer_pointer*8+7 -: 4
-                ]];
-                seq_tail<=seq_tail+8'd1;
+            end else begin                  // type is data, fill as hex
+                print_seq[seq_tail] <= hex_lib[
+                    print_buffer[print_buffer_pointer*8+7 -: 4]];
+                seq_tail <= seq_tail+8'd1;
 
                 //another convert clock cycle is needed
                 print_state<=PRINT_CONV_STATE;
             end
         end
-        PRINT_CONV_STATE:begin//CONV, convert data to hex
-            print_seq[seq_tail]<=hex_lib[print_buffer[
-                print_buffer_pointer*8+3 -: 4
-            ]];
-            seq_tail<=seq_tail+8'd1;
-            print_state<=PRINT_WORK_STATE;
+        PRINT_CONV_STATE: begin             //CONV, convert data to hex
+            print_seq[seq_tail] <= hex_lib[
+                print_buffer[print_buffer_pointer*8+3 -: 4]];
+            seq_tail <= seq_tail + 8'd1;
+            print_state <= PRINT_WORK_STATE;
 
-            print_buffer_pointer<=print_buffer_pointer-7'd1;
+            print_buffer_pointer <= print_buffer_pointer - 7'd1;
 
-            if(print_buffer_pointer==print_length)
-                print_state<=PRINT_IDLE_STATE;
+            if (print_buffer_pointer == print_length)
+                print_state <= PRINT_IDLE_STATE;
         end
     endcase
 end
@@ -105,16 +96,18 @@ wire uart_txp;
 uart_tx_V2 tx(print_clk, print_seq[seq_head], uart_en, uart_bz, uart_txp);
 
 reg [7:0] total;
-// assign leds = total;
-assign leds = ~cnt[22:15];
+// assign leds[7:0] = ~total;
+// assign leds[7:0] = ~seq_head;
+// assign leds[15:8] = ~{seq_tail[2:0], 1'b0, print_state, spin_state, 1'b0};
+// assign leds = ~cnt[22:15];
 
 //always block to send the data via UART
-always@(posedge print_clk)begin
+always @(posedge print_clk) begin
     uart_en<=1'b0;
-    if(uart_en && uart_bz)
-        seq_head<=seq_head+8'd1;
-    if(seq_head!=seq_tail && !uart_bz) begin
-        uart_en<=1'b1;
+    if (uart_en && uart_bz)
+        seq_head <= seq_head + 8'd1;
+    if (seq_head!=seq_tail && !uart_bz) begin
+        uart_en <= 1'b1;
         total <= total + 1;
     end
 end
@@ -124,21 +117,21 @@ task int_print(
     input[7:0] type_length  //8bit width to show 128 characters
 );
 begin    
-    if(print_state==PRINT_IDLE_STATE)begin//print when busy will be ignored
-        spin_state<=~spin_state;
+    if (print_state == PRINT_IDLE_STATE) begin//print when busy will be ignored
+        spin_state <= ~spin_state;
 
-        if(type_length==STR)begin
-            print_type<=STR;
+        if (type_length == STR) begin
+            print_type <= STR;
         end else begin
-            print_type<=HEX;
-            print_length<=8'd128-type_length;
+            print_type <= HEX;
+            print_length <= 8'd128 - type_length;
         end
 
-        print_buffer<=strin;
+        print_buffer <= strin;
     end
 end
 
 // `define print(a,b) int_print({>>{a}}, b)
-`define print(a,b) int_print((a) << (1024-$bits(a)), b)
+`define print(a,b) int_print({a, (1024-$bits(a))'b0}, b)
 
 endtask

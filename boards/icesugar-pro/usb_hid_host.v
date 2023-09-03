@@ -33,8 +33,9 @@ module usb_hid_host (
     output reg game_a, game_b, game_x, game_y, game_sel, game_sta,  // buttons
 
     // debug
+    output [13:0] dbg_pc,
+    output [3:0] dbg_inst,
     output [63:0] dbg_hid_report	// last HID report
-    // output [7:0] dbg_regs [7]
 );
 
 wire data_rdy;          // data ready
@@ -45,12 +46,15 @@ wire save;			    // save dat[b] to output register r
 wire [3:0] save_r;      // which register to save to
 wire [3:0] save_b;      // dat[b]
 wire connected;
+wire [13:0] dbg_pc;
+wire [3:0] dbg_inst;
 
 ukp ukp(
     .usbrst_n(usbrst_n), .usbclk(usbclk),
     .usb_dp(usb_dp), .usb_dm(usb_dm), .usb_oe(),
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
-    .connected(connected), .conerr(conerr) );
+    .connected(connected), .conerr(conerr),
+    .dbg_pc(dbg_pc), .dbg_inst(dbg_inst) );
 
 reg  [3:0] rcvct;		// counter for recv data
 reg  data_strobe_r, data_rdy_r;	// delayed data_strobe and data_rdy
@@ -179,7 +183,9 @@ module ukp(
     output reg save,			// save: regs[save_r] <= dat[save_b]
     output reg [3:0] save_r, save_b,
     output reg connected,
-    output conerr
+    output conerr,
+    output [13:0] dbg_pc,
+    output [3:0] dbg_inst
 );
 
     parameter S_OPCODE = 0;
@@ -207,6 +213,8 @@ module ukp(
     reg [7:0] sb = 0;					// out value
     reg [3:0] sadr;						// out4/outb write ptr
     reg [13:0] pc = 0, wpc;				// program counter, wpc = next pc
+    assign dbg_pc = pc;
+    assign dbg_inst = inst;
     reg [2:0] timing = 0;				// T register (0~7)
     reg [3:0] lb4 = 0, lb4w;
     reg [13:0] interval = 0;
