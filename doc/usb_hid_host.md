@@ -7,7 +7,7 @@ and [UKP in FPGA pc8001](http://kwhr0.g2.xrea.com/hard/pc8001.html). Thanks to t
 
 ## Design overview
 
-This core is built to handle USB keyboards, mice and gamepads because I find no suitable options for small FPGAs like the Tang Nano series and boards with Lattice ice40/ECP5. The features of the design are,
+This core is built to handle USB keyboards, mice and gamepads because I found no suitable options for small FPGAs like the Tang Nano series and boards with Lattice ice40/ECP5. The features of the design are,
 
   * A small and efficient USB host controller core capable of supporting common HID devices such as keyboards, mice and gamepads.
   * No CPU is required. The core handles all layers of the USB protocol relevant to HID devices.
