@@ -33,8 +33,7 @@ module usb_hid_host (
     output reg game_a, game_b, game_x, game_y, game_sel, game_sta,  // buttons
 
     // debug
-    output [63:0] dbg_hid_report,	// last HID report
-    output [7:0] dbg_regs [7]
+    output [63:0] dbg_hid_report	// last HID report
 );
 
 wire data_rdy;          // data ready
@@ -44,18 +43,19 @@ reg [7:0] regs [7];     // 0 (VID_L), 1 (VID_H), 2 (PID_L), 3 (PID_H), 4 (INTERF
 wire save;			    // save dat[b] to output register r
 wire [3:0] save_r;      // which register to save to
 wire [3:0] save_b;      // dat[b]
+wire connected;
 
 ukp ukp(
     .usbrst_n(usbrst_n), .usbclk(usbclk),
     .usb_dp(usb_dp), .usb_dm(usb_dm), .usb_oe(),
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
-    .connected(connected), .conerr(conerr) );
+    .connected(connected), .conerr(conerr));
 
 reg  [3:0] rcvct;		// counter for recv data
 reg  data_strobe_r, data_rdy_r;	// delayed data_strobe and data_rdy
 reg  [7:0] dat[8];		// data in last response
 assign dbg_hid_report = {dat[7], dat[6], dat[5], dat[4], dat[3], dat[2], dat[1], dat[0]};
-assign dbg_regs = regs;
+// assign dbg_regs = regs;
 
 // Gamepad types, see response_recognition below
 // localparam D_GENERIC = 0;

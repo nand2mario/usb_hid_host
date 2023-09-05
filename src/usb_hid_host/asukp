@@ -140,7 +140,7 @@ sub getline {
 
 sub putline {
 	if ($BRAM) {
-		printf "%02x\n", shift(@_);
+		printf "%01x\n", shift(@_);
 		$pc++;
 	} else {
 		printf "\t\t\t10'h%03x: data = 4'h%x;%s\n", $pc++, shift(@_), $scd;

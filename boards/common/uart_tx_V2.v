@@ -11,7 +11,7 @@ initial begin
     tx_p = 1'b1;
 end
 
-parameter clk_freq = 27000000;
+parameter clk_freq = 12000000;
 parameter uart_freq = 115200;
 
 localparam STATE_IDLE	= 2'b00;

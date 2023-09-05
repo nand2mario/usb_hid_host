@@ -1,0 +1,51 @@
+LOCATE      COMP "sys_clk"      SITE "P6";
+IOBUF       PORT "sys_clk"      IO_TYPE=LVCMOS33;
+FREQUENCY   PORT "sys_clk"      25 MHZ;
+
+LOCATE      COMP "led"          SITE "A12";
+IOBUF       PORT "led"          IO_TYPE=LVCMOS33;
+
+LOCATE      COMP "UART_TXD"     SITE "B9";   // iCELink-UART3-RX
+IOBUF       PORT "UART_TXD"     IO_TYPE=LVCMOS33;
+LOCATE      COMP "UART_RXD"     SITE "A9";
+IOBUF       PORT "UART_RXD"     IO_TYPE=LVCMOS33;
+
+LOCATE      COMP "usbdm"        SITE "G4";
+IOBUF       PORT "usbdm"        IO_TYPE=LVCMOS33;
+LOCATE      COMP "usbdp"        SITE "G3";
+IOBUF       PORT "usbdp"        IO_TYPE=LVCMOS33;
+
+LOCATE      COMP "leds[0]"      SITE "E4";
+IOBUF       PORT "leds[0]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[1]"      SITE "D4";
+IOBUF       PORT "leds[1]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[2]"      SITE "D5";
+IOBUF       PORT "leds[2]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[3]"      SITE "R7";
+IOBUF       PORT "leds[3]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[4]"      SITE "E3";
+IOBUF       PORT "leds[4]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[5]"      SITE "C3";
+IOBUF       PORT "leds[5]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[6]"      SITE "C4";
+IOBUF       PORT "leds[6]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[7]"      SITE "R8";
+IOBUF       PORT "leds[7]"      IO_TYPE=LVCMOS33;
+
+LOCATE      COMP "leds[8]"      SITE "T6";      // non-existent
+IOBUF       PORT "leds[8]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[9]"      SITE "K3";
+IOBUF       PORT "leds[9]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[10]"      SITE "H3";
+IOBUF       PORT "leds[10]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[11]"      SITE "K4";
+IOBUF       PORT "leds[11]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[12]"      SITE "P7";     // non-existent
+IOBUF       PORT "leds[12]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[13]"      SITE "J2";
+IOBUF       PORT "leds[13]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[14]"      SITE "J3";
+IOBUF       PORT "leds[14]"      IO_TYPE=LVCMOS33;
+LOCATE      COMP "leds[15]"      SITE "J4";
+IOBUF       PORT "leds[15]"      IO_TYPE=LVCMOS33;
+

@@ -1,66 +1,27 @@
-//
-// Example for using the usb_hid_host core
-// nand2mario, 8/2023
-//
 
-module usb_hid_host_demo (
-    input sys_clk,
-    // input sys_resetn,
-    input s1,
-
-    // UART
-    input UART_RXD,
-    output UART_TXD,
-
-    // LEDs
-    output [5:0] led,
-
-    // USB
-    inout usbdm,
-    inout usbdp
-
+module hid_printer (
+    input clk,
+    input resetn,
+    input uart_tx,
+    input [1:0] usb_type, 
+    input usb_report,
+    input [7:0] key_modifiers,
+    input [7:0] key1, key2, key3, key4,
+    input [7:0] mouse_btn,
+    input signed [7:0] mouse_dx,
+    input signed [7:0] mouse_dy,
+    input game_l, game_r, game_u, game_d,
+    input game_a, game_b, game_x, game_y, game_sel, game_sta
 );
 
-reg sys_resetn = 0;
-always @(posedge clk) begin
-    sys_resetn <= ~s1;
-end
-
-wire clk = sys_clk;
-wire clk_sdram = ~sys_clk;  
-wire clk_usb;
-
-// USB clock 12Mhz
-Gowin_rPLL_usb pll_nes(
-    .clkin(sys_clk),
-    .clkout(clk_usb),       // 12Mhz usb clock
-    .clkoutp()
-);
-
-wire [1:0] usb_type;
-wire [7:0] key_modifiers, key1, key2, key3, key4;
-wire [7:0] mouse_btn;
-wire signed [7:0] mouse_dx, mouse_dy;
-wire [63:0] hid_report;
-wire [7:0] hid_regs [7];
-
-usb_hid_host usb (
-    .usbclk(clk_usb), .usbrst_n(sys_resetn),
-    .usb_dm(usbdm), .usb_dp(usbdp),	
-    .typ(usb_type), .report(usb_report),
-    .key_modifiers(key_modifiers), .key1(key1), .key2(key2), .key3(key3), .key4(key4),
-    .mouse_btn(mouse_btn), .mouse_dx(mouse_dx), .mouse_dy(mouse_dy),
-    .game_l(game_l), .game_r(game_r), .game_u(game_u), .game_d(game_d),
-    .game_a(game_a), .game_b(game_b), .game_x(game_x), .game_y(game_y), 
-    .game_sel(game_sel), .game_sta(game_sta),
-    .conerr(usb_conerr), .dbg_hid_report(hid_report), .dbg_regs(hid_regs)
-);
+reg [22:0] cnt;
+always @(posedge clk) cnt <= cnt + 1;
 
 `include "print.vh"
 defparam tx.uart_freq=115200;
 defparam tx.clk_freq=12000000;
-assign print_clk = clk_usb;
-assign UART_TXD = uart_txp;
+assign print_clk = clk;
+assign uart_tx = uart_txp;
 
 `include "utils.vh"                 // scancode2ascii()
 
@@ -79,8 +40,8 @@ reg [9:0] game_btns_r;
 wire [9:0] game_btns = {game_l, game_r, game_u, game_d, game_a, game_b, 
                         game_x, game_y, game_sel, game_sta};
 
-always @(posedge clk_usb) begin
-    if(~sys_resetn) begin
+always @(posedge clk) begin
+    if(~resetn) begin
         `print("usb_hid_host demo. Connect keyboard, mouse or gamepad.\n",STR);
     end else begin
         if (timer == 20'hfffff) begin
@@ -159,20 +120,13 @@ always @(posedge clk_usb) begin
     end
 
     // print raw reports
-//    case (timer)
+//    case (cnt[19:0])
 //    20'h00000: `print(hid_report, 8); 
 //    20'h10000: `print(", type=", STR); 
 //    20'h20000: `print({6'b0, usb_type}, 1); 
-//    20'h30000: `print(", regs=", STR);
-//    20'h40000: `print({hid_regs[4], hid_regs[5], hid_regs[6]}, 3);
 //    20'hf0000: `print("\n", STR); 
 //    endcase
 
 end
-
-reg report_toggle;      // blinks whenever there's a report
-always @(posedge clk_usb) if (usb_report) report_toggle <= ~report_toggle;
-
-assign led = ~{usb_type, 2'b0, usb_conerr, report_toggle};
 
 endmodule
