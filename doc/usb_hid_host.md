@@ -7,19 +7,18 @@ and [UKP in FPGA pc8001](http://kwhr0.g2.xrea.com/hard/pc8001.html). Thanks to t
 
 ## Design overview
 
-This core is built to handle USB keyboards, mice and gamepads because I cannot find a suitable one for small FPGAs like the Tang Nano series (similar to boards with Lattice EP4/EP5). My goals,
+This core is built to handle USB keyboards, mice and gamepads because I find no suitable options for small FPGAs like the Tang Nano series and boards with Lattice ice40/ECP5. The features of the design are,
 
-  * A small and efficient USB host controller core to support common HID devices including keyboards, mice and gamepads.
-  * No CPU is required. The core handles all layers of the USB protocol related to HID devices.
+  * A small and efficient USB host controller core capable of supporting common HID devices such as keyboards, mice and gamepads.
+  * No CPU is required. The core handles all layers of the USB protocol relevant to HID devices.
   * No USB interface IC (PHY) needed. The core communciates directly through the D+/D- USB pins.
-  * USB low-speed (1.5Mbps). Uses a single 12Mhz clock. 
+  * USB low-speed (1.5Mbps), utilizing a single 12Mhz clock. 
 
-To make USB work is actually tricky. USB is designed to be implemented with both hardware and software. So a CPU is normally needed. The UKP and hi631's design uses a tiny microcode processor to be just able to support keyboards and a specific gamepad. This core extended the design to add mouse support, automatic detection of all three types of devices, and support different types of gamepads (I tested 5).
+To make USB work is actually tricky. USB is designed to be implemented with both hardware and software. So a CPU is normally needed. The UKP and hi631's design uses a tiny microcode processor to be just able to support keyboards and a specific gamepad. This core extended the original design by adding mouse support, automatic detecting all three types of devices, and accomodating various types of gamepads (tested with 5 different gamepads).
 
+## Get the sample projects to work 
 
-## Get the sample project to work 
-
-For the demo project to work, follow this diagram to connect a USB-A Female connector to Tang Nano 20K.
+For the Tang Nano demo project to work, follow this diagram to connect a USB-A Female connector to Tang Nano 20K.
 ```
     __ 
 +--|  |--+
@@ -39,6 +38,8 @@ For the demo project to work, follow this diagram to connect a USB-A Female conn
 ```
 
 * **Series Resistors**: Connect a 15K resistors between D- and GND, and another between D+ and GND for impedance matching. See [Gowin USB 1.1 SoftPHY IP](https://www.gowinsemi.com/upload/database_doc/1328/document/6073e6c99b401.pdf).
+
+The Icesugar-Pro demo project is similar. Note that D+ is pin `G3` and D- is pin `G4`. See [board pinout](https://github.com/wuxx/icesugar-pro/blob/master/doc/iCESugar-pro-pinmap.png). 
 
 ## The Microcode Processor (UKP)
 * Each instruction has a 4-bit OP code, and 0-3 4-bit operands.
@@ -74,21 +75,21 @@ Output Registers: 0 (VID_L), 1 (VID_H), 2 (PID_L), 3 (PID_H), 4 (INTERFACE_CLASS
 
 ## Interpreting USB HID reports
 
-All HID events are transmitted in messages, *HID reports* in USB terminology. For our `usb_hid_host` modules, the `typ` output determines device type. When it is not zero, a pulse in the `report` output signals the receipt of an HID report.
+All HID events are transmitted in messages, *HID reports* in USB terminology. For our `usb_hid_host` module, the `typ` output indicates the device type, and when it is not zero, a pulse in the `report` output signifies the arrival of a HID report.
 
 ## Keyboard
 
-USB keyboards transmits *scancodes*, not ASCII code as we normally need. So that's what the `key1`, `key2`, `key3` and `key4` contains - scancodes of currently pressed keys. And `key_modifiers` contains statuses of keys like shift, ctrl and etc. You need to do some conversion if you need ASCII. The demo project shows a simple way to do this (supporting only 2 simultaneously pressed keys, and no auto-repeat). 
+USB keyboards transmits *scancodes* instead of ASCII codes. Therefore the `key1`, `key2`, `key3` and `key4` represents scancodes of the currently pressed keys. The `key_modifiers` output indicates the status of modifier keys like shift, ctrl, etc. If you need to convert the scancodes to ASCII, a simple method is demonstrated in the demo project (which supports up to 2 simultaneously pressed keys and lacks auto-repeat functionality). 
 
-If you want to do it yourself, the scancodes are in the keyboard/Keypad Page sector of the HID Usage Tables. See [scancode](https://gist.github.com/MightyPork/6da26e382a7ad91b5496ee55fdc73db2)
+If you prefer to do the conversion on your own, you can find scancodes in the "keyboard/Keypad Page" sector of the HID Usage Tables. See [scancode](https://gist.github.com/MightyPork/6da26e382a7ad91b5496ee55fdc73db2)
 
 ### Mouse
 
-Mouse reports are in format of buttons and delta movements in X and Y directions (`mouse_dx` and `mouse_dy`). You probably want to convert this into an on-screen mouse position, which the demo project also shows a way to do.
+Mouse reports consists of button states and delta movements in the X and Y directions (`mouse_dx` and `mouse_dy`). To convert this information into an on-screen mouse position, the demo project provides an example implementation.
 
 ### Gamepad
 
-Gamepads are more straightforward as the reports are just the status of the buttons. Only 10 buttons are currently exposed. It should be straightforward to add more if it is in the HID report.
+Gamepads reports are more straightforward, as they represent the status of the buttons directly. Currently, only 10 buttons are exposed, but it should be straightforward to add more if they are present in the HID report.
 
 ## References
 
