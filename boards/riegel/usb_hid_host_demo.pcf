@@ -1,0 +1,12 @@
+set_io sys_clk L5
+
+set_io led F1
+
+# usb_host_dual_socket_pmod on PMODA
+set_io usbdp J5
+set_io usbdm L1
+
+# uart on PMODB
+set_io UART_TXD J2
+set_io UART_RXD H2
+
