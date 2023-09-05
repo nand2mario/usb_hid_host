@@ -59,7 +59,7 @@ hid_printer prt (
     .mouse_btn(mouse_btn), .mouse_dx(mouse_dx), .mouse_dy(mouse_dy),
     .game_l(game_l), .game_r(game_r), .game_u(game_u), .game_d(game_d),
     .game_a(game_a), .game_b(game_b), .game_x(game_x), .game_y(game_y), 
-    .game_sel(game_sel), .game_sta(game_sta), 
+    .game_sel(game_sel), .game_sta(game_sta)
 );
 
 reg report_toggle;      // blinks whenever there's a report
