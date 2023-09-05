@@ -132,6 +132,7 @@ begin
 end
 
 // `define print(a,b) int_print({>>{a}}, b)
-`define print(a,b) int_print({a, (1024-$bits(a))'b0}, b)
+//`define print(a,b) int_print({a, (1024-$bits(a))'b0}, b)
+`define print(a,b) int_print({a, {1024-$bits(a){1'b0}}}, b)
 
 endtask
