@@ -4,7 +4,7 @@ TOP=usb_hid_host_demo
 COM=../common
 SRC=../../src
 
-OBJS+=top.v clock.v uart_tx_V2.v $(SRC)/usb_hid_host.v $(SRC)/usb_hid_host_rom.v
+OBJS+=top.v clock.v $(COM)/hid_printer.v $(COM)/uart_tx_V2.v $(SRC)/usb_hid_host.v $(SRC)/usb_hid_host_rom.v
 
 all: ${TARGET}.bit
 
