@@ -1,0 +1,24 @@
+LOCATE      COMP "sys_clk"      SITE "A7";
+IOBUF       PORT "sys_clk"      IO_TYPE=LVCMOS33;
+FREQUENCY   PORT "sys_clk"      48 MHZ;
+
+LOCATE      COMP "led"          SITE "B1";
+IOBUF       PORT "led"          IO_TYPE=LVCMOS33;
+
+// PMODA
+LOCATE      COMP "UART_TXD"     SITE "A3"; 
+IOBUF       PORT "UART_TXD"     IO_TYPE=LVCMOS33;
+LOCATE      COMP "UART_RXD"     SITE "A4";
+IOBUF       PORT "UART_RXD"     IO_TYPE=LVCMOS33;
+
+// onboard USB host port
+LOCATE      COMP "usbdm"        SITE "E1";
+IOBUF       PORT "usbdm"        IO_TYPE=LVCMOS33;
+LOCATE      COMP "usbdp"        SITE "F2";
+IOBUF       PORT "usbdp"        IO_TYPE=LVCMOS33;
+
+// usb_host_dual_socket_pmod on PMODB
+//LOCATE      COMP "usbdm"        SITE "A11";	
+//IOBUF       PORT "usbdm"        IO_TYPE=LVCMOS33;
+//LOCATE      COMP "usbdp"        SITE "A12";
+//IOBUF       PORT "usbdp"        IO_TYPE=LVCMOS33;
