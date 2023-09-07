@@ -10,10 +10,11 @@ Please refer to [usb_hid_host.md](doc/usb_hid_host.md) for a more comprehensive 
 
 ## Sample projects
 
-Two sample projects are available to demonstrate the usage of usb_hid_host.
+Sample projects are available for the following boards to demonstrate the usage of usb_hid_host.
 
-* [For Tang Nano 20K](boards/tang-nano-20k/) (Gowin GW2A FPGA). Gowin IDE project file `usb_hid_proj.gprj` is provided. Simply open it in Gowin IDE and build the project. 
-* [For IceSugar-Pro](boards/icesugar-pro/) (Lattice ECP5 FPGA). It comes with a Makefile for the open source Yosys/NextPNR toolchain. 
+* [Tang Nano 20K](boards/tang-nano-20k/) (Gowin GW2A FPGA). Gowin IDE project file `usb_hid_proj.gprj` is provided. Simply open it in Gowin IDE and build the project. 
+* [IceSugar-Pro](boards/icesugar-pro/) and [Machdyne Schoko](boards/schoko/) (both with Lattice ECP5). These come with Makefiles for the open source Yosys/nextpnr toolchain. 
+* [Machdyne Riegel](boards/riegel/) (Lattice iCE40), also building with Yosys/nextpnr.
 
 Connect your USB devices and expect results similar to the following.
 
