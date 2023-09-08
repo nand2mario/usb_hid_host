@@ -73,7 +73,7 @@ always @(posedge clk) begin
                 if (mouse_x[10:9] == 2'b01 && mouse_x2 < 0) mouse_x <= 1023;  // overflow
                 else if (mouse_x2 < 0) mouse_x <= 0;
                 if (mouse_y[10:9] == 2'b01 && mouse_y2 < 0) mouse_y <= 1023;
-                else if (mouse_y2 < 0) mouse_y = 0;
+                else if (mouse_y2 < 0) mouse_y <= 0;
                 start_print <= 1;
             end
             3: begin        // gamepad
