@@ -1,0 +1,16 @@
+# 12 MHz clock
+set_io -nowarn sys_clk        35
+set_frequency sys_clk 12
+
+set_io sys_resetn 10
+set_io led 11
+
+set_io -nowarn UART_RXD          6
+set_io -nowarn UART_TXD          9
+
+
+# usb_host_dual_socket_pmod on PMOD1B
+set_io usbdp 31
+set_io usbdm 28
+
+
