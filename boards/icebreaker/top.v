@@ -1,6 +1,6 @@
 //
-// Example using the usb_hid_host core, for Machdyne Riegel
-// based on the icesugar-pro example by nand2mario, 8/2023
+// Example using the usb_hid_host core, for iCEBreaker board
+// based on the icesugar-pro example by nand2mario, 9/2023
 //
 
 module top (
