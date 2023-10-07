@@ -14,7 +14,7 @@ module top (
 
     // LEDs
     output led,
-    output [15:0] leds,
+    output [7:0] leds,
 
     // USB
     inout usbdm,
@@ -67,6 +67,6 @@ always @(posedge clk_usb) if (usb_report) report_toggle <= ~report_toggle;
 
 assign led = report_toggle;
 assign leds[7:0] = ~{6'b0, usb_type};
-assign leds[15:8] = ~8'b0;
+// assign leds[15:8] = ~8'b0;
 
 endmodule
