@@ -24,11 +24,12 @@ Usb_hid_host does not rely on vendor-specific primitives, making it compatible w
 
 For a larger project using usb_hid_host, see [NESTang](https://github.com/nand2mario/nestang).
 
-## Future Improvements
+## Improvements under consideration
 
-* Handling multiple devices on a single port (USB hubs).
-* Support for full-speed devices.
-* Testing compatibility with more devices.
+* Better compatibility for low-speed gamepads through VID/PID identification.
+* Support XBOX360-compatible controllers (needs USB full-speed).
+* Support USB hubs (also needs USB full-speed).
+* Support MIDI devices.
 
 ## Credit
 
