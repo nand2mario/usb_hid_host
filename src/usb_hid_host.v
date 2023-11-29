@@ -10,14 +10,13 @@
 // 
 
 module usb_hid_host (
-    input  usbclk,		            // 12MHz clock
-    input  usbrst_n,	            // reset
-    inout  usb_dm, usb_dp,          // USB D- and D+
-
+    input  wire usbclk,		            // 12MHz clock
+    input  wire usbrst_n,	            // reset
+    inout  wire usb_dm, usb_dp,          // USB D- and D+ input/output
     output reg [1:0] typ,           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
     output reg report,              // pulse after report received from device. 
                                     // key_*, mouse_*, game_* valid depending on typ
-    output conerr,                  // connection or protocol error
+    output wire conerr,                  // connection or protocol error
 
     // keyboard
     output reg [7:0] key_modifiers,
@@ -33,13 +32,13 @@ module usb_hid_host (
     output reg game_a, game_b, game_x, game_y, game_sel, game_sta,  // buttons
 
     // debug
-    output [63:0] dbg_hid_report	// last HID report
+    output wire [63:0] dbg_hid_report	// last HID report
 );
 
 wire data_rdy;          // data ready
 wire data_strobe;       // data strobe for each byte
 wire [7:0] ukpdat;		// actual data
-reg [7:0] regs [7];     // 0 (VID_L), 1 (VID_H), 2 (PID_L), 3 (PID_H), 4 (INTERFACE_CLASS), 5 (INTERFACE_SUBCLASS), 6 (INTERFACE_PROTOCOL)
+reg [7:0] regs [0:6];     // 0 (VID_L), 1 (VID_H), 2 (PID_L), 3 (PID_H), 4 (INTERFACE_CLASS), 5 (INTERFACE_SUBCLASS), 6 (INTERFACE_PROTOCOL)
 wire save;			    // save dat[b] to output register r
 wire [3:0] save_r;      // which register to save to
 wire [3:0] save_b;      // dat[b]
@@ -51,9 +50,9 @@ ukp ukp(
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
     .connected(connected), .conerr(conerr));
 
-reg  [3:0] rcvct;		// counter for recv data
+reg  [2:0] rcvct;		// counter for recv data
 reg  data_strobe_r, data_rdy_r;	// delayed data_strobe and data_rdy
-reg  [7:0] dat[8];		// data in last response
+reg  [7:0] dat[0:7];		// data in last response
 assign dbg_hid_report = {dat[7], dat[6], dat[5], dat[4], dat[3], dat[2], dat[1], dat[0]};
 // assign dbg_regs = regs;
 
@@ -73,7 +72,9 @@ always @(posedge usbclk) begin : process_in_data
         // clear mouse movement for later
         mouse_dx <= 0; mouse_dy <= 0;
     end
-    if(~data_rdy) rcvct <= 0;
+    if(~data_rdy) begin
+        rcvct <= 0;
+    end
     else begin
         if(data_strobe && ~data_strobe_r) begin  // rising edge of ukp data strobe
             dat[rcvct] <= ukpdat;
@@ -150,7 +151,7 @@ reg connected_r;
 always @(posedge usbclk) begin : response_recognition
     save_delayed <= save;
     if (save) begin
-        regs[save_r] <= dat[save_b];
+        regs[save_r[2:0]] <= dat[save_b[2:0]];
     end else if (save_delayed && ~save && save_r == 6) begin     
         // falling edge of save for bInterfaceProtocol
         if (regs[4] == 3) begin  // bInterfaceClass. 3: HID, other: non-HID
@@ -168,17 +169,17 @@ end
 endmodule
 
 module ukp(
-    input usbrst_n,
-    input usbclk,				// 12MHz clock
-    inout usb_dp, usb_dm,		// D+, D-
-    output usb_oe,
+    input wire usbrst_n,
+    input wire usbclk,				// 12MHz clock
+    inout wire usb_dp, usb_dm,		// D+, D-
+    output wire usb_oe,
     output reg ukprdy, 			// data frame is outputing
-    output ukpstb,				// strobe for a byte within the frame
+    output wire ukpstb,				// strobe for a byte within the frame
     output reg [7:0] ukpdat,	// output data when ukpstb=1
     output reg save,			// save: regs[save_r] <= dat[save_b]
     output reg [3:0] save_r, save_b,
     output reg connected,
-    output conerr
+    output wire conerr
 );
 
     parameter S_OPCODE = 0;
@@ -193,19 +194,22 @@ module ukp(
     parameter S_TOGGLE0 = 9;
     parameter S_TOGGLE1 = 10;
 
+    reg    dpi, dmi; 
+    reg    ukprdyd;
+
     wire [3:0] inst;
     reg  [3:0] insth;
     wire sample;						// 1: an IN sample is available
     // reg connected = 0;
     reg inst_ready = 0, up = 0, um = 0, cond = 0, nak = 0, dmis = 0;
-    reg ug, ugw, nrzon;					// ug=1: output enabled, 0: hi-Z
+    reg ug, nrzon;					// ug=1: output enabled, 0: hi-Z
     reg bank = 0, record1 = 0;
     reg [1:0] mbit = 0;					// 1: out4/outb is transmitting
-    reg [3:0] state = 0, stated;
+    reg [3:0] state = 0;
     reg [7:0] wk = 0;					// W register
     reg [7:0] sb = 0;					// out value
     reg [3:0] sadr;						// out4/outb write ptr
-    reg [13:0] pc = 0, wpc;				// program counter, wpc = next pc
+    reg [13:0] pc, wpc;				// program counter, wpc = next pc
     reg [2:0] timing = 0;				// T register (0~7)
     reg [3:0] lb4 = 0, lb4w;
     reg [13:0] interval = 0;
@@ -244,7 +248,7 @@ module ukp(
                         insth <= inst;
                         if(inst==1) state <= S_LDI0;						// op=ldi
                         if(inst==3) begin sadr <= 3; state <= S_S0; end		// op=out4
-                        if(inst==4) begin ug <= 9; up <= 0; um <= 0; end
+                        if(inst==4) begin ug <= 1'b1; up <= 0; um <= 0; end
                         if(inst==5) begin ug <= 0; end
                         if(inst==6) begin sadr <= 7; state <= S_S0; end		// op=outb
                         if (inst[3:2]==2'b10) begin							// op=10xx(BZ,BC,BNAK,DJNZ)
@@ -348,7 +352,6 @@ module ukp(
             if (~record & record1) bank <= ~bank;
             // Connection status & WDT
             ukprdyd <= ukprdy;
-            nakd <= nak;
             if (ukprdy && ~ukprdyd || inst_ready && state == S_OPCODE && inst == 4'b0010) 
                 conct <= 0;     // reset watchdog on data received or START instruction
             else begin 
@@ -364,8 +367,5 @@ module ukp(
     assign sample = inst_ready & state == S_OPCODE & inst == 4'b1101 & timing == 4; // IN
     assign record = connected & ~nak;
     assign ukpstb = ~nrzon & ukprdy & (bitadr[2:0] == 3'b100) & (timing == 2);
-    reg    dpi, dmi; 
-    reg    ukprdyd;
-    reg    nakd;
 endmodule
 
