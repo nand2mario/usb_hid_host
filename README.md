@@ -6,6 +6,8 @@ Usb_hid_host is a compact FPGA core designed to support USB keyboards, mice and 
 
 To use usb_hid_host, simply add `usb_hid_host.v`, `usb_hid_host_rom.v` and `usb_hid_host_rom.hex` to your project. The module interface in `usb_hid_host.v` should be sufficiently documented to get you started.
 
+For FPGA boards with pmod ports, [usb_host_pmod](https://github.com/nand2mario/usb_host_pmod) is a pmod module designed to work with usb_hid_host.  
+
 Please refer to [usb_hid_host.md](doc/usb_hid_host.md) for a more comprehensive introduction to the design of the core.
 
 ## Sample projects
