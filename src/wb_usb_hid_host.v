@@ -3,7 +3,9 @@ module wb_usb_hid_host (
     input  wire usb_clk,		            // 12MHz clock
     input  wire usb_rst_n,                  // USB clock domain active low reset
     input  wire sys_rst_n,                  // System clock domain active low reset
-    inout  wire usb_dm, usb_dp,            // USB D- and D+ input/output
+    input  wire usb_dm_i, usb_dp_i,         // USB D- and D+ input
+    output wire usb_dm_o, usb_dp_o,         // USB D- and D+ output    
+    output wire usb_oe,
     output wire irq,     
 
     //32-bit pipelined Wishbone slave interface.
@@ -72,11 +74,20 @@ module wb_usb_hid_host (
     wire do_wbs_wr_reg;
     wire unused = &{wbs_sel, wbs_dat_w[31:1]};
 
+    // Request UKP to branch
+    wire trigger_branch_stb;
+
+    assign trigger_branch_stb = do_wbs_wr_reg && (wbs_adr == 4'd9);
+    
     usb_hid_host usb_hid_host_inst (
         .usbclk(usb_clk),		            // 12MHz clock
         .usbrst_n(usb_rst_n),	            // reset
-        .usb_dm(usb_dm), 
-        .usb_dp(usb_dp),          // USB D- and D+ input
+        .usb_dm_i(usb_dm_i), 
+        .usb_dp_i(usb_dp_i),          // USB D- and D+ input
+        .usb_dm_o(usb_dm_o), 
+        .usb_dp_o(usb_dp_o),          // USB D- and D+ output
+        .usb_oe(usb_oe),
+        .trigger_branch_stb(trigger_branch_stb),
         .typ(usb_typ),           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
         .report(usb_report),              // pulse after report received from device. 
                                     // key_*, mouse_*, game_* valid depending on typ

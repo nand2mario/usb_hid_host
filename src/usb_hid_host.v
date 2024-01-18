@@ -12,7 +12,10 @@
 module usb_hid_host (
     input  wire usbclk,		            // 12MHz clock
     input  wire usbrst_n,	            // reset
-    inout  wire usb_dm, usb_dp,          // USB D- and D+ input/output
+    input  wire usb_dm_i, usb_dp_i,           // USB D- and D+ input
+    output  wire usb_dm_o, usb_dp_o,          // USB D- and D+ output
+    output wire usb_oe,
+    input  wire trigger_branch_stb,
     output reg [1:0] typ,           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
     output reg report,              // pulse after report received from device. 
                                     // key_*, mouse_*, game_* valid depending on typ
@@ -46,7 +49,10 @@ wire connected;
 
 ukp ukp(
     .usbrst_n(usbrst_n), .usbclk(usbclk),
-    .usb_dp(usb_dp), .usb_dm(usb_dm), .usb_oe(),
+    .usb_dp_i(usb_dp_i), .usb_dm_i(usb_dm_i),
+    .usb_dp_o(usb_dp_o), .usb_dm_o(usb_dm_o),
+    .usb_oe(usb_oe),
+    .trigger_branch_stb(trigger_branch_stb), 
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
     .connected(connected), .conerr(conerr));
 
@@ -171,8 +177,10 @@ endmodule
 module ukp(
     input wire usbrst_n,
     input wire usbclk,				// 12MHz clock
-    inout wire usb_dp, usb_dm,		// D+, D-
+    input wire usb_dp_i, usb_dm_i,		// D+, D-
+    output wire usb_dp_o, usb_dm_o,
     output wire usb_oe,
+    input wire trigger_branch_stb,
     output reg ukprdy, 			// data frame is outputing
     output wire ukpstb,				// strobe for a byte within the frame
     output reg [7:0] ukpdat,	// output data when ukpstb=1
@@ -228,6 +236,7 @@ module ukp(
     wire jmppc  = state == S_OPCODE && inst==15 ? 1 : 0;
     wire dbit   = sb[7-sadr[2:0]];
     wire record;
+    reg trigger_branch_reg;
     reg  dmid;
     reg [23:0] conct;
     assign conerr = conct[23] || ~usbrst_n;
@@ -238,8 +247,13 @@ module ukp(
         if(~usbrst_n) begin 
             pc <= 0; connected <= 0; cond <= 0; inst_ready <= 0; state <= S_OPCODE; timing <= 0; 
             mbit <= 0; bitadr <= 0; nak <= 1; ug <= 0;
+            trigger_branch_reg <= 0;
         end else begin
-            dpi <= usb_dp; dmi <= usb_dm;
+            if (trigger_branch_stb) begin
+                trigger_branch_reg <= 1'b1;
+            end
+
+            dpi <= usb_dp_i; dmi <= usb_dm_i;
             save <= 0;		// ensure pulse
             if (inst_ready) begin
                 // Instruction decoding
@@ -251,6 +265,11 @@ module ukp(
                         if(inst==4) begin ug <= 1'b1; up <= 0; um <= 0; end
                         if(inst==5) begin ug <= 0; end
                         if(inst==6) begin sadr <= 7; state <= S_S0; end		// op=outb
+                        //if(inst==0) begin
+                        //    state <= S_B0;
+                        //    cond <= trigger_branch_reg;
+                        //    trigger_branch_reg <= 1'b0;
+                        //end
                         if (inst[3:2]==2'b10) begin							// op=10xx(BZ,BC,BNAK,DJNZ)
                             state <= S_B0;
                             case (inst[1:0])
@@ -361,8 +380,8 @@ module ukp(
         end
     end
 
-    assign usb_dp = ug ? up : 1'bZ;
-    assign usb_dm = ug ? um : 1'bZ;
+    assign usb_dp_o = up;
+    assign usb_dm_o = um;
     assign usb_oe = ug;
     assign sample = inst_ready & state == S_OPCODE & inst == 4'b1101 & timing == 4; // IN
     assign record = connected & ~nak;

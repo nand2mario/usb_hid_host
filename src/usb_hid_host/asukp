@@ -3,7 +3,7 @@
 
 $BRAM=1;
 
-%inst = ("nop"   , 0,  "ldi"  , 1,  "start", 2,  "out4", 3,
+%inst = ("bb"    , 0,  "ldi"  , 1,  "start", 2,  "out4", 3,
 		 "out0"  , 4,  "hiz"  , 5,  "outb" , 6,  "ret" , 7, 
 		 "bz"    , 8,  "bc"   , 9,  "bnak" , 10, "djnz", 11,
 		 "toggle", 12, "save" , 12, "in"   , 13, "wait" , 14, "jmp", 15 );
@@ -28,7 +28,7 @@ while (&getline) {				# calculate all label addresses
 		$code = $inst{$_[0]};
 		if($code==15) {
 			$pc += 4;
-		} elsif ($code == 1 || $code >= 8 && $code < 12 || $code == 3 || $code == 6 || $code == 12) {
+		} elsif ($code == 0 || $code == 1 || $code >= 8 && $code < 12 || $code == 3 || $code == 6 || $code == 12) {
 			$pc += 3;
 		} else {
 			$pc += 1;
@@ -42,14 +42,13 @@ open(DST, "> usb_hid_host_rom.v") || die;
 select DST;
 if ($BRAM) {			# use BRAM
 	print <<EOF;
-module usb_hid_host_rom(clk, adr, data);
-\tinput clk;
-\tinput [13:0] adr;
-\toutput [3:0] data;
-\treg [3:0] data; 
-\treg [3:0] mem [$size];
+module usb_hid_host_rom(
+\tinput wire clk,
+\tinput wire [13:0] adr,
+\toutput reg [3:0] data);
+\treg [3:0] mem [0:$size];
 \tinitial \$readmemh("usb_hid_host_rom.hex", mem);
-\talways @(posedge clk) data <= mem[adr];
+\talways @(posedge clk) data <= mem[adr[9:0]];
 endmodule
 EOF
 close(DST);
@@ -81,7 +80,7 @@ while (&getline) {
 		# $_ =~ s/^\s+|\s+$//g;				# trim
 		@_ = split;							# split on whitespace
 		$code = $inst{$_[0]};
-		# printf STDERR "$_   $_[0] -> $code\n";
+		printf STDERR "pc=%03x: $_   $_[0] -> $code\n", $pc;
 		if ($code<16) {putline($code); $scd="";}
 		if ($code==12) {
 			if ($_[0] eq "toggle") {
@@ -106,7 +105,7 @@ while (&getline) {
 			putline($v >> 4);
 		}
 
-		elsif ($code >= 8 && $code < 12 || $code == 15) {	# jump
+		elsif ($code >= 8 && $code < 12 || $code == 15 || $code == 0) {	# jump
 			unless (defined($label{$_[1]})) {
 				printf STDERR "$_[1] not defined\n";
 				exit 1;

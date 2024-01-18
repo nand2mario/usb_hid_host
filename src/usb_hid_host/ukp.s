@@ -9,8 +9,8 @@ cstart2:
 	bc	connected
 	bz	cstart
 
-; ---- wait 200mS after device attached
-	ldi	200
+; ---- wait 20mS after device attached
+	ldi	20
 w200ms:
 	wait
 	djnz	w200ms
