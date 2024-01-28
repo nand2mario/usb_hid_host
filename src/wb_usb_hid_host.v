@@ -75,7 +75,8 @@ module wb_usb_hid_host (
     wire unused = &{wbs_sel, wbs_dat_w[31:1]};
 
     // Request UKP to branch
-    logic wb_req_branch, wb_ack_req_branch, usb_req_branch, usb_ack_req_branch;
+    reg wb_req_branch, wb_ack_req_branch, usb_req_branch;
+    wire usb_ack_req_branch;
     (* ASYNC_REG = "TRUE" *) reg [1:0] wb_ack_req_branch_xfer_pipe;
     (* ASYNC_REG = "TRUE" *) reg [1:0] usb_req_branch_xfer_pipe;
 
@@ -84,12 +85,12 @@ module wb_usb_hid_host (
         else if (wb_ack_req_branch) wb_req_branch <= 1'b0;
     end
     
-    logic wb_set_leds, usb_set_leds, wb_ack_set_leds, usb_ack_set_leds;
+    reg wb_set_leds, usb_set_leds, wb_ack_set_leds, usb_ack_set_leds;
     (* ASYNC_REG = "TRUE" *) reg [1:0] usb_set_leds_xfer_pipe;
     (* ASYNC_REG = "TRUE" *) reg [1:0] wb_ack_set_leds_xfer_pipe;
     
-    logic [7:0] wb_leds; 
-    logic [7:0] usb_leds;
+    reg [7:0] wb_leds; 
+    reg [7:0] usb_leds;
 
     always @(posedge wb_clk) begin
         if (do_wbs_wr_reg && (wbs_adr == 4'd10)) begin
