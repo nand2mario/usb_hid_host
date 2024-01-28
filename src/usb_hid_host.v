@@ -15,7 +15,9 @@ module usb_hid_host (
     input  wire usb_dm_i, usb_dp_i,           // USB D- and D+ input
     output  wire usb_dm_o, usb_dp_o,          // USB D- and D+ output
     output wire usb_oe,
-    input  wire trigger_branch_stb,
+    input  wire req_branch,
+    output wire ack_req_branch,
+    input  wire [7:0] leds,
     output reg [1:0] typ,           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
     output reg report,              // pulse after report received from device. 
                                     // key_*, mouse_*, game_* valid depending on typ
@@ -52,7 +54,9 @@ ukp ukp(
     .usb_dp_i(usb_dp_i), .usb_dm_i(usb_dm_i),
     .usb_dp_o(usb_dp_o), .usb_dm_o(usb_dm_o),
     .usb_oe(usb_oe),
-    .trigger_branch_stb(trigger_branch_stb), 
+    .req_branch(req_branch),
+    .ack_req_branch(ack_req_branch),
+    .outr(leds),
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
     .connected(connected), .conerr(conerr));
 
@@ -180,7 +184,9 @@ module ukp(
     input wire usb_dp_i, usb_dm_i,		// D+, D-
     output wire usb_dp_o, usb_dm_o,
     output wire usb_oe,
-    input wire trigger_branch_stb,
+    input wire req_branch,
+    output wire ack_req_branch,
+    input wire [7:0] outr,
     output reg ukprdy, 			// data frame is outputing
     output wire ukpstb,				// strobe for a byte within the frame
     output reg [7:0] ukpdat,	// output data when ukpstb=1
@@ -205,8 +211,8 @@ module ukp(
     reg    dpi, dmi; 
     reg    ukprdyd;
 
-    wire [3:0] inst;
-    reg  [3:0] insth;
+    wire [4:0] inst;
+    reg  [4:0] insth;
     wire sample;						// 1: an IN sample is available
     // reg connected = 0;
     reg inst_ready = 0, up = 0, um = 0, cond = 0, nak = 0, dmis = 0;
@@ -236,10 +242,12 @@ module ukp(
     wire jmppc  = state == S_OPCODE && inst==15 ? 1 : 0;
     wire dbit   = sb[7-sadr[2:0]];
     wire record;
-    reg trigger_branch_reg;
+    reg req_branch_reg, ack_req_branch_reg;
     reg  dmid;
     reg [23:0] conct;
+
     assign conerr = conct[23] || ~usbrst_n;
+    assign ack_req_branch = ack_req_branch_reg;
 
     usb_hid_host_rom ukprom(.clk(usbclk), .adr(pc), .data(inst));
 
@@ -247,10 +255,12 @@ module ukp(
         if(~usbrst_n) begin 
             pc <= 0; connected <= 0; cond <= 0; inst_ready <= 0; state <= S_OPCODE; timing <= 0; 
             mbit <= 0; bitadr <= 0; nak <= 1; ug <= 0;
-            trigger_branch_reg <= 0;
+            req_branch_reg <= 0; ack_req_branch_reg <= 0;
         end else begin
-            if (trigger_branch_stb) begin
-                trigger_branch_reg <= 1'b1;
+            ack_req_branch_reg <= 1'b0;
+            if (req_branch) begin
+                req_branch_reg <= 1'b1;
+                ack_req_branch_reg <= 1'b1;
             end
 
             dpi <= usb_dp_i; dmi <= usb_dm_i;
@@ -265,12 +275,12 @@ module ukp(
                         if(inst==4) begin ug <= 1'b1; up <= 0; um <= 0; end
                         if(inst==5) begin ug <= 0; end
                         if(inst==6) begin sadr <= 7; state <= S_S0; end		// op=outb
-                        //if(inst==0) begin
-                        //    state <= S_B0;
-                        //    cond <= trigger_branch_reg;
-                        //    trigger_branch_reg <= 1'b0;
-                        //end
-                        if (inst[3:2]==2'b10) begin							// op=10xx(BZ,BC,BNAK,DJNZ)
+                        if(inst==16) begin
+                            state <= S_B0;
+                            cond <= req_branch_reg;
+                            req_branch_reg <= 1'b0;
+                        end
+                        if (inst[4:2]==3'b010) begin					   // op=10xx(BZ,BC,BNAK,DJNZ)
                             state <= S_B0;
                             case (inst[1:0])
                                 2'b00: cond <= ~dmi;
@@ -282,27 +292,28 @@ module ukp(
                         if(inst==11 | inst==13 & sample) wk <= wk - 8'd1;	// op=DJNZ,IN
                         if(inst==15) begin state <= S_B2; cond <= 1; end	// op=jmp
                         if(inst==12) state <= S_TOGGLE0;
+                        if(inst==17) begin sadr <= 7; state <= S_S2; sb <= outr; mbit <= 1; end    // outr
                     end
                     // Instructions with operands
                     // ldi
-                    S_LDI0: begin	wk[3:0] <= inst; state <= S_LDI1;	end
-                    S_LDI1: begin	wk[7:4] <= inst; state <= S_OPCODE; end
+                    S_LDI0: begin	wk[3:0] <= inst[3:0]; state <= S_LDI1;	end
+                    S_LDI1: begin	wk[7:4] <= inst[3:0]; state <= S_OPCODE; end
                     // branch/jmp
-                    S_B2: begin lb4w <= inst; state <= S_B0; end
-                    S_B0: begin lb4  <= inst; state <= S_B1; end
+                    S_B2: begin lb4w <= inst[3:0]; state <= S_B0; end
+                    S_B0: begin lb4  <= inst[3:0]; state <= S_B1; end
                     S_B1: state <= S_OPCODE;
                     // out
-                    S_S0: begin sb[3:0] <= inst; state <= S_S1; end
-                    S_S1: begin sb[7:4] <= inst; state <= S_S2; mbit <= 1; end
+                    S_S0: begin sb[3:0] <= inst[3:0]; state <= S_S1; end
+                    S_S1: begin sb[7:4] <= inst[3:0]; state <= S_S2; mbit <= 1; end
                     // toggle and save
                     S_TOGGLE0: begin 
                         if (inst == 15) connected <= ~connected;// toggle
-                        else save_r <= inst;                    // save
+                        else save_r <= inst[3:0];                    // save
                         state <= S_TOGGLE1;
                       end
                     S_TOGGLE1: begin
                         if (inst != 15) begin
-                            save_b <= inst;
+                            save_b <= inst[3:0];
                             save <= 1;
                         end
                         state <= S_OPCODE;
@@ -315,22 +326,22 @@ module ukp(
                         if(retpc) pc <= wpc;					// ret
                         else if(branch)
                             if(insth==15)						// jmp
-                                pc <= { inst, lb4, lb4w, 2'b00 };
+                                pc <= { inst[3:0], lb4, lb4w, 2'b00 };
                             else								// branch
-                                pc <= { 4'b0000, inst, lb4, 2'b00 };
+                                pc <= { 4'b0000, inst[3:0], lb4, 2'b00 };
                         else	pc <= pc + 1;					// next
                         inst_ready <= 0;
                     end
                 end
             end
             else inst_ready <= 1;
-            // bit transmission (out4/outb)
+            // bit transmission (out4/outb/outr)
             if (mbit==1 && timing == 0) begin
                 if(ug==0) nrztxct <= 0;
                 else
                     if(dbit) nrztxct <= nrztxct + 1;
                     else     nrztxct <= 0;
-                if(insth == 4'd6) begin
+                if((insth == 5'd6) || (insth == 5'd17)) begin
                     if(nrztxct!=6) begin up <= dbit ?  up : ~up; um <= dbit ? ~up :  up; end
                     else           begin up <= ~up; um <= up; nrztxct <= 0; end
                 end else begin
@@ -342,7 +353,7 @@ module ukp(
             end
             // start instruction
             dmid <= dmi;
-            if (inst_ready & state == S_OPCODE & inst == 4'b0010) begin // op=start 
+            if (inst_ready & state == S_OPCODE & inst == 5'b00010) begin // op=start 
                 bitadr <= 0; nak <= 1; nrzrxct <= 0;
             end else 
                 if(ug==0 && dmi!=dmid) timing <= 1;
@@ -371,7 +382,7 @@ module ukp(
             if (~record & record1) bank <= ~bank;
             // Connection status & WDT
             ukprdyd <= ukprdy;
-            if (ukprdy && ~ukprdyd || inst_ready && state == S_OPCODE && inst == 4'b0010) 
+            if (ukprdy && ~ukprdyd || inst_ready && state == S_OPCODE && inst == 5'b00010) 
                 conct <= 0;     // reset watchdog on data received or START instruction
             else begin 
                 if(conct[23:22]!=2'b11) conct <= conct + 1;
@@ -383,7 +394,7 @@ module ukp(
     assign usb_dp_o = up;
     assign usb_dm_o = um;
     assign usb_oe = ug;
-    assign sample = inst_ready & state == S_OPCODE & inst == 4'b1101 & timing == 4; // IN
+    assign sample = inst_ready & state == S_OPCODE & inst == 5'b01101 & timing == 4; // IN
     assign record = connected & ~nak;
     assign ukpstb = ~nrzon & ukprdy & (bitadr[2:0] == 3'b100) & (timing == 2);
 endmodule

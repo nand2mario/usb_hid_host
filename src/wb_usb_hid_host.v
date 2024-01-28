@@ -75,10 +75,32 @@ module wb_usb_hid_host (
     wire unused = &{wbs_sel, wbs_dat_w[31:1]};
 
     // Request UKP to branch
-    wire trigger_branch_stb;
+    logic wb_req_branch, wb_ack_req_branch, usb_req_branch, usb_ack_req_branch;
+    (* ASYNC_REG = "TRUE" *) reg [1:0] wb_ack_req_branch_xfer_pipe;
+    (* ASYNC_REG = "TRUE" *) reg [1:0] usb_req_branch_xfer_pipe;
 
-    assign trigger_branch_stb = do_wbs_wr_reg && (wbs_adr == 4'd9);
+    always @(posedge wb_clk) begin
+        if (do_wbs_wr_reg && (wbs_adr == 4'd9)) wb_req_branch <= 1'b1;
+        else if (wb_ack_req_branch) wb_req_branch <= 1'b0;
+    end
     
+    logic wb_set_leds, usb_set_leds, wb_ack_set_leds, usb_ack_set_leds;
+    (* ASYNC_REG = "TRUE" *) reg [1:0] usb_set_leds_xfer_pipe;
+    (* ASYNC_REG = "TRUE" *) reg [1:0] wb_ack_set_leds_xfer_pipe;
+    
+    logic [7:0] wb_leds; 
+    logic [7:0] usb_leds;
+
+    always @(posedge wb_clk) begin
+        if (do_wbs_wr_reg && (wbs_adr == 4'd10)) begin
+            wb_set_leds <= 1'b1;
+            wb_leds <= wbs_dat_w[7:0];
+        end
+        else if (wb_ack_set_leds) begin
+            wb_set_leds <= 1'b0;
+        end
+    end
+
     usb_hid_host usb_hid_host_inst (
         .usbclk(usb_clk),		            // 12MHz clock
         .usbrst_n(usb_rst_n),	            // reset
@@ -87,7 +109,9 @@ module wb_usb_hid_host (
         .usb_dm_o(usb_dm_o), 
         .usb_dp_o(usb_dp_o),          // USB D- and D+ output
         .usb_oe(usb_oe),
-        .trigger_branch_stb(trigger_branch_stb),
+        .req_branch(usb_req_branch),
+        .ack_req_branch(usb_ack_req_branch),
+        .leds(usb_leds),
         .typ(usb_typ),           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
         .report(usb_report),              // pulse after report received from device. 
                                     // key_*, mouse_*, game_* valid depending on typ
@@ -121,10 +145,26 @@ module wb_usb_hid_host (
         .dbg_hid_report(usb_dbg_hid_report)	// last HID report
     );
 
-    //Synchronize the usb_report pulse
+    //Synchronize the usb_report and ack_req_branch pulse
     always @(posedge wb_clk) begin
 	    {wb_usb_report_prev, wb_usb_report_new, usb_report_xfer_pipe} <= {wb_usb_report_new, usb_report_xfer_pipe, usb_report};
 	    {wb_usb_rst_n, wb_usb_rst_xfer_pipe} <= {wb_usb_rst_xfer_pipe, usb_rst_n};
+        {wb_ack_req_branch, wb_ack_req_branch_xfer_pipe} <= {wb_ack_req_branch_xfer_pipe, usb_ack_req_branch};
+        {wb_ack_set_leds, wb_ack_set_leds_xfer_pipe} <= {wb_ack_set_leds_xfer_pipe, usb_ack_set_leds};
+    end
+
+    //Synchronize the req_branch signal
+    always @(posedge usb_clk) begin
+        {usb_req_branch, usb_req_branch_xfer_pipe} <= {usb_req_branch_xfer_pipe, wb_req_branch};
+        {usb_set_leds, usb_set_leds_xfer_pipe} <= {usb_set_leds_xfer_pipe, wb_set_leds};
+
+        if (usb_set_leds) begin
+            usb_leds <= wb_leds;
+            usb_ack_set_leds <= 1'b1;
+        end
+        else begin
+            usb_ack_set_leds <= 1'b0;
+        end
     end
 
     assign wb_usb_report_stb = (!wb_usb_report_prev) && (wb_usb_report_new);
