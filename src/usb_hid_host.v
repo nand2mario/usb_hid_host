@@ -17,7 +17,7 @@ module usb_hid_host (
     output wire usb_oe,
     input  wire req_branch,
     output wire ack_req_branch,
-    input  wire [7:0] leds,
+    input  wire [3:0] leds,
     output reg [1:0] typ,           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
     output reg report,              // pulse after report received from device. 
                                     // key_*, mouse_*, game_* valid depending on typ
@@ -49,6 +49,29 @@ wire [3:0] save_r;      // which register to save to
 wire [3:0] save_b;      // dat[b]
 wire connected;
 
+reg [15:0] crc16;
+
+always @(leds) begin
+    case (leds)
+    4'h0: crc16 = 16'hbf40;
+    4'h1: crc16 = 16'h7f81;
+    4'h2: crc16 = 16'h7ec1;
+    4'h3: crc16 = 16'hbe00;
+    4'h4: crc16 = 16'h7c41;
+    4'h5: crc16 = 16'hbc80;
+    4'h6: crc16 = 16'hbdc0;
+    4'h7: crc16 = 16'h7d01;
+    4'h8: crc16 = 16'h7941;
+    4'h9: crc16 = 16'hb980;
+    4'ha: crc16 = 16'hb8c0;
+    4'hb: crc16 = 16'h7801;
+    4'hc: crc16 = 16'hba40;
+    4'hd: crc16 = 16'h7a81;
+    4'he: crc16 = 16'h7bc1;
+    4'hf: crc16 = 16'hbb00;
+    endcase
+end
+
 ukp ukp(
     .usbrst_n(usbrst_n), .usbclk(usbclk),
     .usb_dp_i(usb_dp_i), .usb_dm_i(usb_dm_i),
@@ -56,7 +79,9 @@ ukp ukp(
     .usb_oe(usb_oe),
     .req_branch(req_branch),
     .ack_req_branch(ack_req_branch),
-    .outr(leds),
+    .outr0({4'b0, leds}),
+    .outr1(crc16[7:0]),
+    .outr2(crc16[15:8]),
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
     .connected(connected), .conerr(conerr));
 
@@ -186,7 +211,9 @@ module ukp(
     output wire usb_oe,
     input wire req_branch,
     output wire ack_req_branch,
-    input wire [7:0] outr,
+    input wire [7:0] outr0,
+    input wire [7:0] outr1,
+    input wire [7:0] outr2,
     output reg ukprdy, 			// data frame is outputing
     output wire ukpstb,				// strobe for a byte within the frame
     output reg [7:0] ukpdat,	// output data when ukpstb=1
@@ -275,11 +302,6 @@ module ukp(
                         if(inst==4) begin ug <= 1'b1; up <= 0; um <= 0; end
                         if(inst==5) begin ug <= 0; end
                         if(inst==6) begin sadr <= 7; state <= S_S0; end		// op=outb
-                        if(inst==16) begin
-                            state <= S_B0;
-                            cond <= req_branch_reg;
-                            req_branch_reg <= 1'b0;
-                        end
                         if (inst[4:2]==3'b010) begin					   // op=10xx(BZ,BC,BNAK,DJNZ)
                             state <= S_B0;
                             case (inst[1:0])
@@ -292,7 +314,14 @@ module ukp(
                         if(inst==11 | inst==13 & sample) wk <= wk - 8'd1;	// op=DJNZ,IN
                         if(inst==15) begin state <= S_B2; cond <= 1; end	// op=jmp
                         if(inst==12) state <= S_TOGGLE0;
-                        if(inst==17) begin sadr <= 7; state <= S_S2; sb <= outr; mbit <= 1; end    // outr
+                        if(inst==16) begin
+                            state <= S_B0;
+                            cond <= req_branch_reg;
+                            req_branch_reg <= 1'b0;
+                        end
+                        if(inst==17) begin sadr <= 7; state <= S_S2; sb <= outr0; mbit <= 1; end    // outr0
+                        if(inst==18) begin sadr <= 7; state <= S_S2; sb <= outr1; mbit <= 1; end    // outr1
+                        if(inst==19) begin sadr <= 7; state <= S_S2; sb <= outr2; mbit <= 1; end    // outr2
                     end
                     // Instructions with operands
                     // ldi
@@ -335,13 +364,13 @@ module ukp(
                 end
             end
             else inst_ready <= 1;
-            // bit transmission (out4/outb/outr)
+            // bit transmission (out4/outb/outr0)
             if (mbit==1 && timing == 0) begin
                 if(ug==0) nrztxct <= 0;
                 else
                     if(dbit) nrztxct <= nrztxct + 1;
                     else     nrztxct <= 0;
-                if((insth == 5'd6) || (insth == 5'd17)) begin
+                if((insth == 5'd6) || (insth == 5'd17) || (insth == 5'd18) || (insth == 5'd19)) begin
                     if(nrztxct!=6) begin up <= dbit ?  up : ~up; um <= dbit ? ~up :  up; end
                     else           begin up <= ~up; um <= up; nrztxct <= 0; end
                 end else begin

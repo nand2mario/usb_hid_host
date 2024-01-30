@@ -7,7 +7,7 @@ $BRAM=1;
 		 "out0"  , 4,  "hiz"  , 5,  "outb" , 6,  "ret" , 7, 
 		 "bz"    , 8,  "bc"   , 9,  "bnak" , 10, "djnz", 11,
 		 "toggle", 12, "save" , 12, "in"   , 13, "wait" , 14, "jmp", 15,
-		 "br"    , 16, "outr" , 17 );
+		 "br"    , 16, "outr0" , 17, "outr1", 18, "outr2", 19);
 
 open(SRC, "ukp.s") || die;
 while (&getline) {				# calculate all label addresses
@@ -83,7 +83,7 @@ while (&getline) {
 		@_ = split;							# split on whitespace
 		$code = $inst{$_[0]};
 		printf STDERR "pc=%03x: $_   $_[0] -> $code\n", $pc;
-		if ($code<18) {putline($code); $scd="";}
+		if ($code<20) {putline($code); $scd="";}
 		if ($code==12) {
 			if ($_[0] eq "toggle") {
 				putline(15);

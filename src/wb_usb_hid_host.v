@@ -89,13 +89,13 @@ module wb_usb_hid_host (
     (* ASYNC_REG = "TRUE" *) reg [1:0] usb_set_leds_xfer_pipe;
     (* ASYNC_REG = "TRUE" *) reg [1:0] wb_ack_set_leds_xfer_pipe;
     
-    reg [7:0] wb_leds; 
-    reg [7:0] usb_leds;
+    reg [3:0] wb_leds; 
+    reg [3:0] usb_leds;
 
     always @(posedge wb_clk) begin
         if (do_wbs_wr_reg && (wbs_adr == 4'd10)) begin
             wb_set_leds <= 1'b1;
-            wb_leds <= wbs_dat_w[7:0];
+            wb_leds <= wbs_dat_w[3:0];
         end
         else if (wb_ack_set_leds) begin
             wb_set_leds <= 1'b0;

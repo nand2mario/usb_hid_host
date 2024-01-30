@@ -248,9 +248,9 @@ setreport_data:     ; set report data stage
 
 	outb 0x80		; SYNC
 	outb 0x4b		; PID=DATA1
-	outr     		; led bitmap
-	outb 0x81		; CRC16
-	outb 0x7f
+	outr0     		; led bitmap
+	outr1   		; CRC16_1
+	outr2			; CRC16_2
 	out4 0x03		; EOP
 	ret
 
