@@ -146,7 +146,7 @@ connected:
 	djnz	cstart2
 	wait
 
-	br setreport
+	br setreport ;the br flag will be set when the usb_hid_host is request to send a new LED bitmap to the device.
 
 ;; ---- IN(1,1) (interrupt transfer)
 	jmp  in11
@@ -168,7 +168,8 @@ connerr:
 	toggle
 	jmp  cstart
 
-; ---- Set report
+; ---- Set report updating the LED bitmap in the USB device (assumes USB keyboard).
+; ---- The transaction consists of a Setup Phase, a Data Phase, and a Ack Handshake Phase.
 setreport:
 	jmp setreport_setup
 	hiz
@@ -179,21 +180,17 @@ setrept_dat:
 	hiz
 	jmp     rcvdt
 	wait
-; ---- send IN(1,0)
 setrept_in10:
 	jmp  in10
 	hiz
-
-; ---- receive
 	jmp  	rcvdt
-;	wait
 	bnak	setreport
 
 ; ---- send ACK
 	jmp sendack
 	hiz
 ;	wait
-; ---- jump startf
+; ---- SetReport transaction completed. Return to start of the firmware loop.
 	jmp  cstart
 
 ; --------------

@@ -12,16 +12,16 @@
 module usb_hid_host (
     input  wire usbclk,		            // 12MHz clock
     input  wire usbrst_n,	            // reset
-    input  wire usb_dm_i, usb_dp_i,           // USB D- and D+ input
-    output  wire usb_dm_o, usb_dp_o,          // USB D- and D+ output
-    output wire usb_oe,
-    input  wire req_branch,
-    output wire ack_req_branch,
-    input  wire [3:0] leds,
-    output reg [1:0] typ,           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
-    output reg report,              // pulse after report received from device. 
-                                    // key_*, mouse_*, game_* valid depending on typ
-    output wire conerr,                  // connection or protocol error
+    input  wire usb_dm_i, usb_dp_i,     // USB D- and D+ input
+    output  wire usb_dm_o, usb_dp_o,    // USB D- and D+ output
+    output wire usb_oe,                 // USB Output Enable
+    input  wire update_leds,            // Send SetReport command to USB HID keyboard to set the LEDs according to the leds bitmap below.
+    output wire ack_update_leds,        // Acknowledge that the USB HID keyboard command has been sent. Used for CDC.
+    input  wire [3:0] leds,             // The Keyboard LED bitmap: bit0=Num Loc, bit1=CAPS lock, bit2=scroll lock, bit3=compose.
+    output reg [1:0] typ,               // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
+    output reg report,                  // pulse after report received from device. 
+                                        // key_*, mouse_*, game_* valid depending on typ
+    output wire conerr,                 // connection or protocol error
 
     // keyboard
     output reg [7:0] key_modifiers,
@@ -43,7 +43,7 @@ module usb_hid_host (
 wire data_rdy;          // data ready
 wire data_strobe;       // data strobe for each byte
 wire [7:0] ukpdat;		// actual data
-reg [7:0] regs [0:6];     // 0 (VID_L), 1 (VID_H), 2 (PID_L), 3 (PID_H), 4 (INTERFACE_CLASS), 5 (INTERFACE_SUBCLASS), 6 (INTERFACE_PROTOCOL)
+reg [7:0] regs [0:6];   // 0 (VID_L), 1 (VID_H), 2 (PID_L), 3 (PID_H), 4 (INTERFACE_CLASS), 5 (INTERFACE_SUBCLASS), 6 (INTERFACE_PROTOCOL)
 wire save;			    // save dat[b] to output register r
 wire [3:0] save_r;      // which register to save to
 wire [3:0] save_b;      // dat[b]
@@ -51,6 +51,8 @@ wire connected;
 
 reg [15:0] crc16;
 
+//CRC16 Look Up Table for the 1-byte data stage of the SetReport transaction for Keyboard LED updates. 
+//Key is the LED bitmap sent in the data stage, the result is the corresponding CRC16 value. 
 always @(leds) begin
     case (leds)
     4'h0: crc16 = 16'hbf40;
@@ -77,11 +79,11 @@ ukp ukp(
     .usb_dp_i(usb_dp_i), .usb_dm_i(usb_dm_i),
     .usb_dp_o(usb_dp_o), .usb_dm_o(usb_dm_o),
     .usb_oe(usb_oe),
-    .req_branch(req_branch),
-    .ack_req_branch(ack_req_branch),
-    .outr0({4'b0, leds}),
-    .outr1(crc16[7:0]),
-    .outr2(crc16[15:8]),
+    .req_branch(update_leds), //the update_leds signal request the UKP firmware to take the branch on the 'br' instruction.
+    .ack_req_branch(ack_update_leds), //indication that the branch has been taken.
+    .outr0({4'b0, leds}), //1-byte value to send when firmware executes the 'outr0' instruction.
+    .outr1(crc16[7:0]),   //1-byte value to send when firwmare executes the 'outr1' instruction.
+    .outr2(crc16[15:8]),  //1-byte valye to send when firmware executes the 'outr2' instruction.
     .ukprdy(data_rdy), .ukpstb(data_strobe), .ukpdat(ukpdat), .save(save), .save_r(save_r), .save_b(save_b),
     .connected(connected), .conerr(conerr));
 
@@ -205,19 +207,19 @@ endmodule
 
 module ukp(
     input wire usbrst_n,
-    input wire usbclk,				// 12MHz clock
-    input wire usb_dp_i, usb_dm_i,		// D+, D-
-    output wire usb_dp_o, usb_dm_o,
-    output wire usb_oe,
-    input wire req_branch,
-    output wire ack_req_branch,
-    input wire [7:0] outr0,
-    input wire [7:0] outr1,
-    input wire [7:0] outr2,
-    output reg ukprdy, 			// data frame is outputing
-    output wire ukpstb,				// strobe for a byte within the frame
-    output reg [7:0] ukpdat,	// output data when ukpstb=1
-    output reg save,			// save: regs[save_r] <= dat[save_b]
+    input wire usbclk,				    // 12MHz clock
+    input wire usb_dp_i, usb_dm_i,		// D+, D- input
+    output wire usb_dp_o, usb_dm_o,     // D+, D- output
+    output wire usb_oe,                 // Output Enable
+    input wire req_branch,              // When set, UKP firmware will branch on 'br' instruction.
+    output wire ack_req_branch,         // Indication that 'br' branch has been taken.
+    input wire [7:0] outr0,             // 1-byte value to output on USB when 'outr0' instruction executes.
+    input wire [7:0] outr1,             // 1-byte value to output on USB when 'outr1' instruction executes.
+    input wire [7:0] outr2,             // 1-byte value to output on USB when 'outr2' instruction executes.
+    output reg ukprdy, 			        // data frame is outputing
+    output wire ukpstb,				    // strobe for a byte within the frame
+    output reg [7:0] ukpdat,	        // output data when ukpstb=1
+    output reg save,			        // save: regs[save_r] <= dat[save_b]
     output reg [3:0] save_r, save_b,
     output reg connected,
     output wire conerr
@@ -250,7 +252,7 @@ module ukp(
     reg [7:0] wk = 0;					// W register
     reg [7:0] sb = 0;					// out value
     reg [3:0] sadr;						// out4/outb write ptr
-    reg [13:0] pc, wpc;				// program counter, wpc = next pc
+    reg [13:0] pc, wpc;				    // program counter, wpc = next pc
     reg [2:0] timing = 0;				// T register (0~7)
     reg [3:0] lb4 = 0, lb4w;
     reg [13:0] interval = 0;
@@ -314,14 +316,14 @@ module ukp(
                         if(inst==11 | inst==13 & sample) wk <= wk - 8'd1;	// op=DJNZ,IN
                         if(inst==15) begin state <= S_B2; cond <= 1; end	// op=jmp
                         if(inst==12) state <= S_TOGGLE0;
-                        if(inst==16) begin
+                        if(inst==16) begin                                  // op=br
                             state <= S_B0;
                             cond <= req_branch_reg;
                             req_branch_reg <= 1'b0;
                         end
-                        if(inst==17) begin sadr <= 7; state <= S_S2; sb <= outr0; mbit <= 1; end    // outr0
-                        if(inst==18) begin sadr <= 7; state <= S_S2; sb <= outr1; mbit <= 1; end    // outr1
-                        if(inst==19) begin sadr <= 7; state <= S_S2; sb <= outr2; mbit <= 1; end    // outr2
+                        if(inst==17) begin sadr <= 7; state <= S_S2; sb <= outr0; mbit <= 1; end    // op=outr0
+                        if(inst==18) begin sadr <= 7; state <= S_S2; sb <= outr1; mbit <= 1; end    // op=outr1
+                        if(inst==19) begin sadr <= 7; state <= S_S2; sb <= outr2; mbit <= 1; end    // op=outr2
                     end
                     // Instructions with operands
                     // ldi
