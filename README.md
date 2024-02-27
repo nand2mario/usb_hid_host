@@ -2,10 +2,7 @@
 
 Epsilon, 2/2024
 
-A couple of extensions of the nand2mario USB HID host core:
-
-- Added keyboard LED control.
-- Added a Wishbone Frontend: *wb_usb_hid_host.v* in a separate clock domain.
+Added keyboard LED control.
  
 nand2mario, 8/2023
 

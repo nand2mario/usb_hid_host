@@ -15,8 +15,8 @@ module usb_hid_host (
     input  wire usb_dm_i, usb_dp_i,     // USB D- and D+ input
     output  wire usb_dm_o, usb_dp_o,    // USB D- and D+ output
     output wire usb_oe,                 // USB Output Enable
-    input  wire update_leds,            // Send SetReport command to USB HID keyboard to set the LEDs according to the leds bitmap below.
-    output wire ack_update_leds,        // Acknowledge that the USB HID keyboard command has been sent. Used for CDC.
+    input  wire update_leds_stb,        // Pulse for one clock cycle to request sending of SetReport command to USB HID keyboard to set the LEDs according to the leds bitmap below.
+    output wire ack_update_leds_stb,    // Acknowledgement strobe that the USB HID keyboard command has been sent.
     input  wire [3:0] leds,             // The Keyboard LED bitmap: bit0=Num Loc, bit1=CAPS lock, bit2=scroll lock, bit3=compose.
     output reg [1:0] typ,               // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
     output reg report,                  // pulse after report received from device. 
@@ -79,8 +79,8 @@ ukp ukp(
     .usb_dp_i(usb_dp_i), .usb_dm_i(usb_dm_i),
     .usb_dp_o(usb_dp_o), .usb_dm_o(usb_dm_o),
     .usb_oe(usb_oe),
-    .req_branch(update_leds), //the update_leds signal request the UKP firmware to take the branch on the 'br' instruction.
-    .ack_req_branch(ack_update_leds), //indication that the branch has been taken.
+    .req_branch_stb(update_leds_stb), //the update_leds signal request the UKP firmware to take the branch on the next 'br' instruction.
+    .ack_req_branch_stb(ack_update_leds_stb), //indication that the branch has been taken.
     .outr0({4'b0, leds}), //1-byte value to send when firmware executes the 'outr0' instruction.
     .outr1(crc16[7:0]),   //1-byte value to send when firwmare executes the 'outr1' instruction.
     .outr2(crc16[15:8]),  //1-byte valye to send when firmware executes the 'outr2' instruction.
@@ -211,8 +211,8 @@ module ukp(
     input wire usb_dp_i, usb_dm_i,		// D+, D- input
     output wire usb_dp_o, usb_dm_o,     // D+, D- output
     output wire usb_oe,                 // Output Enable
-    input wire req_branch,              // When set, UKP firmware will branch on 'br' instruction.
-    output wire ack_req_branch,         // Indication that 'br' branch has been taken.
+    input wire req_branch_stb,          // When pulsed, UKP firmware will branch on the next 'br' instruction it executes.
+    output reg ack_req_branch_stb,     // Indication that 'br' branch has been taken.
     input wire [7:0] outr0,             // 1-byte value to output on USB when 'outr0' instruction executes.
     input wire [7:0] outr1,             // 1-byte value to output on USB when 'outr1' instruction executes.
     input wire [7:0] outr2,             // 1-byte value to output on USB when 'outr2' instruction executes.
@@ -271,25 +271,23 @@ module ukp(
     wire jmppc  = state == S_OPCODE && inst==15 ? 1 : 0;
     wire dbit   = sb[7-sadr[2:0]];
     wire record;
-    reg req_branch_reg, ack_req_branch_reg;
+    reg req_branch_reg;
     reg  dmid;
     reg [23:0] conct;
 
     assign conerr = conct[23] || ~usbrst_n;
-    assign ack_req_branch = ack_req_branch_reg;
-
+    
     usb_hid_host_rom ukprom(.clk(usbclk), .adr(pc), .data(inst));
 
     always @(posedge usbclk) begin
         if(~usbrst_n) begin 
             pc <= 0; connected <= 0; cond <= 0; inst_ready <= 0; state <= S_OPCODE; timing <= 0; 
             mbit <= 0; bitadr <= 0; nak <= 1; ug <= 0;
-            req_branch_reg <= 0; ack_req_branch_reg <= 0;
+            req_branch_reg <= 0; ack_req_branch_stb <= 0;
         end else begin
-            ack_req_branch_reg <= 1'b0;
-            if (req_branch) begin
+            ack_req_branch_stb <= 1'b0;
+            if (req_branch_stb) begin
                 req_branch_reg <= 1'b1;
-                ack_req_branch_reg <= 1'b1;
             end
 
             dpi <= usb_dp_i; dmi <= usb_dm_i;
@@ -320,6 +318,7 @@ module ukp(
                             state <= S_B0;
                             cond <= req_branch_reg;
                             req_branch_reg <= 1'b0;
+                            ack_req_branch_stb <= 1'b1;
                         end
                         if(inst==17) begin sadr <= 7; state <= S_S2; sb <= outr0; mbit <= 1; end    // op=outr0
                         if(inst==18) begin sadr <= 7; state <= S_S2; sb <= outr1; mbit <= 1; end    // op=outr1
