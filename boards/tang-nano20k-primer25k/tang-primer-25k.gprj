@@ -1,0 +1,17 @@
+<?xml version="1" encoding="UTF-8"?>
+<!DOCTYPE gowin-fpga-project>
+<Project>
+    <Template>FPGA</Template>
+    <Version>5</Version>
+    <Device name="GW5A-25A" pn="GW5A-LV25MG121NES">gw5a25a-000</Device>
+    <FileList>
+        <File path="D:/Gowin/dev/usb_hid_host/boards/common/hid_printer.v" type="file.verilog" enable="1"/>
+        <File path="D:/Gowin/dev/usb_hid_host/boards/common/uart_tx_V2.v" type="file.verilog" enable="1"/>
+        <File path="primer25k/gowin_pll_usb.v" type="file.verilog" enable="1"/>
+        <File path="top.v" type="file.verilog" enable="1"/>
+        <File path="D:/Gowin/dev/usb_hid_host/src/usb_hid_host.v" type="file.verilog" enable="1"/>
+        <File path="D:/Gowin/dev/usb_hid_host/src/usb_hid_host_rom.v" type="file.verilog" enable="1"/>
+        <File path="primer25k/primer25k.cst" type="file.cst" enable="1"/>
+        <File path="primer25k/primer25k.sdc" type="file.sdc" enable="1"/>
+    </FileList>
+</Project>

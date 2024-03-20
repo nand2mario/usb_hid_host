@@ -1,5 +1,5 @@
 
-module Gowin_rPLL_usb (clkout, clkoutp, lock, reset, clkin);
+module gowin_pll_usb (clkout, clkoutp, lock, reset, clkin);
 
 output clkout;
 output clkoutp;

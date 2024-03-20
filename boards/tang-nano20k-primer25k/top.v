@@ -13,7 +13,7 @@ module usb_hid_host_demo (
     output UART_TXD,
 
     // LEDs
-    output [5:0] led,
+    output [1:0] led,
 
     // USB
     inout usbdm,
@@ -23,7 +23,7 @@ module usb_hid_host_demo (
 
 reg sys_resetn = 0;
 always @(posedge clk) begin
-    sys_resetn <= ~s1;
+    sys_resetn <= 1;
 end
 
 wire clk = sys_clk;
@@ -31,10 +31,9 @@ wire clk_sdram = ~sys_clk;
 wire clk_usb;
 
 // USB clock 12Mhz
-Gowin_rPLL_usb pll_nes(
+gowin_pll_usb pll_usb (
     .clkin(sys_clk),
-    .clkout(clk_usb),       // 12Mhz usb clock
-    .clkoutp()
+    .clkout(clk_usb)       // 12Mhz usb clock
 );
 
 wire [1:0] usb_type;
@@ -69,6 +68,6 @@ hid_printer prt (
 reg report_toggle;      // blinks whenever there's a report
 always @(posedge clk_usb) if (usb_report) report_toggle <= ~report_toggle;
 
-assign led = ~{usb_type, 2'b0, usb_conerr, report_toggle};
+assign led = ~{usb_conerr, report_toggle};
 
 endmodule
