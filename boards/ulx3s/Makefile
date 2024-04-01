@@ -17,15 +17,23 @@ OBJS+=top.v ecp5pll.sv $(COM)/hid_printer.v $(COM)/uart_tx_V2.v $(SRC)/usb_hid_h
 
 all: ${TARGET}.bit
 
-$(SRC)/usb_hid_host_rom.v $(SRC)/usb_hid_host_rom.hex: $(SRC)/usb_hid_host/ukp.s
+$(SRC)/usb_hid_host_rom.v $(SRC)/usb_hid_host_rom.hex: $(SRC)/usb_hid_host/ukp.s $(SRC)/usb_hid_host/asukp
 	cd $(SRC)/usb_hid_host; perl asukp
 
-$(SRC)/usb_hid_host_rom_random.hex $(SRC)/usb_hid_host_rom_random.v:
-	cd $(SRC)/usb_hid_host; perl asukp
+# usb_hid_host_rom_random.v and usb_hid_host_rom_random.hex
+# are conditional "phony" targets
+# that trigger long FPGA core recompilation
+# only when actual content has changed,
+# not just timestamps
+$(SRC)/usb_hid_host_rom_random.v: $(SRC)/usb_hid_host_rom.v $(SRC)/usb_hid_host_rom.hex
 	sed	-e "s/usb_hid_host_rom.hex/usb_hid_host_rom_random.hex/g" \
 		-e "s/mem \[$(ROMDEPTH)\]/mem \[$(ROMDEPTH512)\]/g" \
-		$(SRC)/usb_hid_host_rom.v > $(SRC)/usb_hid_host_rom_random.v
-	ecpbram --width 4 --depth $(ROMDEPTH512) --seed 0 --generate $(SRC)/usb_hid_host_rom_random.hex
+		$(SRC)/usb_hid_host_rom.v > $(SRC)/usb_hid_host_rom_random_new.v
+	if ! cmp $(SRC)/usb_hid_host_rom_random_new.v $(SRC)/usb_hid_host_rom_random.v; then cp $(SRC)/usb_hid_host_rom_random_new.v $(SRC)/usb_hid_host_rom_random.v; fi
+
+$(SRC)/usb_hid_host_rom_random.hex: $(SRC)/usb_hid_host_rom.hex
+	ecpbram --width 4 --depth $(ROMDEPTH512) --seed 0 --generate $(SRC)/usb_hid_host_rom_random_new.hex
+	if ! cmp $(SRC)/usb_hid_host_rom_random_new.hex $(SRC)/usb_hid_host_rom_random.hex; then cp $(SRC)/usb_hid_host_rom_random_new.hex $(SRC)/usb_hid_host_rom_random.hex; fi
 
 $(TOP).json: $(OBJS)
 	yosys build.ys
@@ -46,6 +54,6 @@ run: ${TARGET}.bit
 	fujprog -t $<
 
 clean:
-	rm -f *.svf *.bit *.config *.json $(SRC)/*.hex *~ 
+	rm -f *.svf *.bit *.config *.json $(SRC)/usb_hid_host_rom* *~
 
-.PHONY: prog clean
+.PHONY: prog run clean
