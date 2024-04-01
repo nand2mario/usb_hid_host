@@ -88,12 +88,16 @@ hid_printer prt (
     .game_sel(game_sel), .game_sta(game_sta)
 );
 
-reg report_toggle;      // blinks whenever there's a report
-always @(posedge clk_usb) if (usb_report) report_toggle <= ~report_toggle;
+reg [6:0] report_counter;      // blinks whenever there's a report
+always @(posedge clk_usb)
+  if      (!sys_resetn) report_counter <= 0;
+  else if (usb_report)  report_counter <= report_counter+1;
 
-assign led[7:4] = 0;
-assign led[  3] = ~sys_resetn;
-assign led[  2] = report_toggle; // green
+assign led[  7] = 0; // blue
+assign led[  6] = report_counter[6]; // green every 128 report
+assign led[5:4] = 0; // red orange
+assign led[  3] = ~sys_resetn; // blue reset
+assign led[  2] = report_counter[0]; // green every report
 assign led[1:0] = usb_type; // orange, red
 
 endmodule
