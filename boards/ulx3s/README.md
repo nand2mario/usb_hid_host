@@ -19,7 +19,7 @@ will be generated almost immediately.
 
 For new ROM, Compilation will not run full synthesis,
 but only firmware ROM will be compiled and replaced
-in already build bitstream.
+in already built bitstream.
 
     make run
 
