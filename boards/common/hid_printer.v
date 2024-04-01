@@ -94,7 +94,7 @@ always @(posedge clk) begin
            end
 
         2:  case (timer)                                    // print mouse position
-            20'h00000: `print("\x0dMouse: x=", STR);        // there's no \r ...
+            20'h00000: `print("\rMouse: x=", STR);        // there's no \r ...
             20'h10000: `print({6'b0, mouse_x[9:0]}, 2);
             20'h20000: `print(", y=", STR);
             20'h30000: `print({6'b0, mouse_y[9:0]}, 2);
@@ -103,7 +103,7 @@ always @(posedge clk) begin
             20'h60000: `print(mouse_btn[2] ? " M        " : " _        ", STR);
             endcase
         3: case(timer)                                      // print gamepad status
-            20'h00000: `print("\x0dGamepad:", STR);
+            20'h00000: `print("\rGamepad:", STR);
             20'h10000: `print(game_l ? " L" : " _", STR);
             20'h20000: `print(game_u ? " U" : " _", STR);
             20'h30000: `print(game_r ? " R" : " _", STR);
