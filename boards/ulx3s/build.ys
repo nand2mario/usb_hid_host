@@ -6,6 +6,6 @@ read_verilog ecp5pll.sv
 read_verilog ../common/hid_printer.v
 read_verilog ../common/uart_tx_V2.v
 read_verilog ../../src/usb_hid_host.v
-read_verilog ../../src/usb_hid_host_rom.v
+read_verilog ../../src/usb_hid_host_rom_random.v
 
 synth_ecp5 -top top -json usb_hid_host_demo.json
