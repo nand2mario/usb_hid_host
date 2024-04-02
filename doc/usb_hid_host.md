@@ -1,5 +1,21 @@
 ## usb_hid_host - a compact USB HID host core
 
+epsilon, 2/2024
+
+The nand2mario design, described below, has been extended as follows:
+
+  * The usb_hid_host core now has an interface that lets you set the keyboard LEDs. The LED bitmap will be sent to the USB device
+    in a SetProtocol transaction implemented in UKP firmware.
+  * To be able to implement the SetProtocol transaction, the UKP now has 5-bit opcodes, allowing for a larger instruction set.
+  * The following instructions have been added:
+  
+| OpCode | Instruction | Effect |
+|--------|-------------|--------|
+| 16     | BR          | Branch when the UKP branch_request signal is set |
+| 17     | OUTR0       | Byte Output the UKP OUTR0 register |
+| 18     | OUTR1       | Byte Output the UKP OUTR1 register |
+| 19     | OUTR2       | Byte Output the UKP OUTR2 register |
+
 nand2mario, 8/2023
 
 This is based on the USB-HID work in [hi631's NES core for Tang Nano 9K](https://qiita.com/hi631/items/4f263ca676e4be14b9f8)
