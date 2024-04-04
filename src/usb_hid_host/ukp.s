@@ -125,7 +125,7 @@ in10lp:
 	jmp  in10
 	hiz
 
-; ---- receive
+; ---- recieve
 	jmp  	rcvdt
 	bnak	in10lp
 
@@ -146,13 +146,11 @@ connected:
 	djnz	cstart2
 	wait
 
-	br setreport ;the br flag will be set when the usb_hid_host is request to send a new LED bitmap to the device.
-
-;; ---- IN(1,1) (interrupt transfer)
+; ---- IN(1,1) (interrupt transfer)
 	jmp  in11
 	hiz
 
-; ---- receive
+; ---- recieve
 	jmp  rcvdt
 	bnak	cstart
 
@@ -163,39 +161,15 @@ connected:
 ; ---- jump startf
 	jmp  cstart
 
-; ---- jump start(&toggle)
+; ---- jupm start(&toggle)
 connerr:
 	toggle
-	jmp  cstart
-
-; ---- Set report updating the LED bitmap in the USB device (assumes USB keyboard).
-; ---- The transaction consists of a Setup Phase, a Data Phase, and a Ack Handshake Phase.
-setreport:
-	jmp setreport_setup
-	hiz
-	jmp  	rcvdt
-	wait
-setrept_dat:
-	jmp setreport_data
-	hiz
-	jmp     rcvdt
-	wait
-setrept_in10:
-	jmp  in10
-	hiz
-	jmp  	rcvdt
-	bnak	setreport
-
-; ---- send ACK
-	jmp sendack
-	hiz
-;	wait
-; ---- SetReport transaction completed. Return to start of the firmware loop.
 	jmp  cstart
 
 ; --------------
 ; sub           
 ; --------------
+
 ; ---- USB bus reset
 reset:
 	out0
@@ -214,67 +188,30 @@ w40ms:
 	wait
 	ret
 
-setreport_setup:    ; set report SETUP stage
+getdesc:			; get device descriptor of (0,0)
 	outb 0x80		; SYNC
 	outb 0x2d		; PID
-	outb 0x01		; ADDR:ENDP = 1:0
-	outb 0xe8		; + CRC5
+	outb 0x00		; ADDR:ENDP = 0:0
+	outb 0x10		; + CRC5
 	out4 0x03		; EOP
+	; outb 0x01		; ADDR:ENDP = 1:0
+	; outb 0xe8		; + CRC5
+	; out4 0x03		; EOP
 
 	outb 0x80		; SYNC
 	outb 0xc3		; PID=DATA0
-	outb 0x21		; bmRequestType: 21
-	outb 0x09		; bRequest=9 Set_Report
-	outb 0x00		; wValue low byte
-	outb 0x02		; wValue high byte
-	outb 0x00		; wIndex low byte
-	outb 0x00		; wIndex high byte
-	outb 0x01		; wLength = 1
+	outb 0x80		; bmRequestType: 80
+	outb 0x06		; bRequest=6 Get_Descriptor
+	outb 0x00		; Desc Index: 0
+	outb 0x01		; Desc Type: 1 device
+	outb 0x00		; Language ID: 0
+	outb 0x00		; 
+	outb 0x12		; wLength = 18
 	outb 0x00
-	outb 0x9D		; CRC16
-	outb 0x70
+	outb 0xE0		; CRC16
+	outb 0xF4
 	out4 0x03		; EOP
 	ret
-
-setreport_data:     ; set report data stage
-	outb 0x80		; SYNC
-	outb 0xe1		; PID=OUT Token
-	outb 0x01		; ADDR:ENDP = 1:0
-	outb 0xe8		; + CRC5
-	out4 0x03		; EOP
-
-	outb 0x80		; SYNC
-	outb 0x4b		; PID=DATA1
-	outr0     		; led bitmap
-	outr1   		; CRC16_1
-	outr2			; CRC16_2
-	out4 0x03		; EOP
-	ret
-
-;getdesc:			; get device descriptor of (0,0)
-;	outb 0x80		; SYNC
-;	outb 0x2d		; PID
-;	outb 0x00		; ADDR:ENDP = 0:0
-;	outb 0x10		; + CRC5
-;	out4 0x03		; EOP
-;	; outb 0x01		; ADDR:ENDP = 1:0
-;	; outb 0xe8		; + CRC5
-;	; out4 0x03		; EOP
-;
-;	outb 0x80		; SYNC
-;	outb 0xc3		; PID=DATA0
-;	outb 0x80		; bmRequestType: 80
-;	outb 0x06		; bRequest=6 Get_Descriptor
-;	outb 0x00		; Desc Index: 0
-;	outb 0x01		; Desc Type: 1 device
-;	outb 0x00		; Language ID: 0
-;	outb 0x00		; 
-;	outb 0x12		; wLength = 18
-;	outb 0x00
-;	outb 0xE0		; CRC16
-;	outb 0xF4
-;	out4 0x03		; EOP
-;	ret
 
 getconfig:			; get config descriptor of (0,0)
 	outb 0x80		; SYNC
@@ -299,11 +236,11 @@ getconfig:			; get config descriptor of (0,0)
 	ret
 
 setadr1:			; set address of device 0 to 1
-	outb 0x80       ; SYNC
-	outb 0x2d       ; PID
-	outb 0x00       ; ADDR:ENDP = 0:0
-	outb 0x10       ; + CRC5
-	out4 0x03       ; EOP
+	outb 0x80
+	outb 0x2d
+	outb 0x00
+	outb 0x10
+	out4 0x03
 
 	outb 0x80
 	outb 0xc3
@@ -321,11 +258,11 @@ setadr1:			; set address of device 0 to 1
 	ret
 
 setconfig1:			; set active configuration of device 1 to 1 (default config)
-	outb 0x80       ; SYNC
-	outb 0x2d       ; PID
-	outb 0x01       ; ADDR:ENDP (1:0? or 0:1?)
-	outb 0xe8       ; + CRC5
-	out4 0x03       ; EOP
+	outb 0x80
+	outb 0x2d
+	outb 0x01
+	outb 0xe8
+	out4 0x03
 
 	outb 0x80
 	outb 0xc3
