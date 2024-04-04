@@ -1,9 +1,5 @@
 # Compact USB HID host FPGA core
 
-Epsilon, 2/2024
-
-Added keyboard LED control.
- 
 nand2mario, 8/2023
 
 Usb_hid_host is a compact FPGA core designed to support USB keyboards, mice and gamepads. It is designed mainly for FPGA retro gaming and computing projects. The most significant advantage is its all-in-one design. It does not require a CPU to work. And it is quite small (<300 LUTs, <250 registers and 1 BRAM block).
