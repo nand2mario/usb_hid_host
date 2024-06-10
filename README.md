@@ -24,8 +24,6 @@ Connect your USB devices and expect results similar to the following.
 
 Usb_hid_host does not rely on vendor-specific primitives, making it compatible with most FPGAs and boards. If you encounter any problems, please submit an issue.
 
-For a larger project using usb_hid_host, see [NESTang](https://github.com/nand2mario/nestang).
-
 ## Improvements under consideration
 
 * Better compatibility for low-speed gamepads through VID/PID identification.
