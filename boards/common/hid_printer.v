@@ -26,9 +26,9 @@ assign uart_tx = uart_txp;
 `include "utils.vh"                 // scancode2ascii()
 
 reg [19:0] timer;
-reg signed [10:0] mouse_x, mouse_y; // 0-1023
-wire [7:0] mouse_x2 = mouse_x + mouse_dx;
-wire [7:0] mouse_y2 = mouse_y + mouse_dy;
+reg signed [10:0] mouse_x, mouse_y; // 0-1023 and negative(!) to detect overflow
+wire signed [10:0] mouse_x2 = mouse_x + mouse_dx;
+wire signed [10:0] mouse_y2 = mouse_y + mouse_dy;
 reg [7:0] last_dx, last_dy; 
 
 reg start_print;
