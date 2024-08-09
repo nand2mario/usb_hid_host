@@ -1,0 +1,4 @@
+# GOWIN Generated sythesis files
+/impl/
+# GOWIN Report files
+*.gprj.user
