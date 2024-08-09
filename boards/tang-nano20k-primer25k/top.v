@@ -6,7 +6,7 @@
 module usb_hid_host_demo (
     input sys_clk,
     // input sys_resetn,
-    input s1,
+    // input s1,
 
     // UART
     input UART_RXD,
