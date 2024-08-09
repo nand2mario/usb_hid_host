@@ -32,8 +32,11 @@ wire clk_usb;
 
 // USB clock 12Mhz
 gowin_pll_usb pll_usb (
-    .clkin(sys_clk),
-    .clkout(clk_usb)       // 12Mhz usb clock
+    .clkout(clk_usb),      // 12Mhz usb clock
+    .clkoutp(),            // not connected
+    .lock(),               // not connected
+    .reset(~sys_resetn),
+    .clkin(sys_clk)
 );
 
 wire [1:0] usb_type;
