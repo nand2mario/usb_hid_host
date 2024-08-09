@@ -13,7 +13,7 @@ module usb_hid_host_demo (
     output UART_TXD,
 
     // LEDs
-    output [1:0] led,
+    output [2:0] led,
 
     // USB
     inout usbdm,
@@ -71,6 +71,6 @@ hid_printer prt (
 reg report_toggle;      // blinks whenever there's a report
 always @(posedge clk_usb) if (usb_report) report_toggle <= ~report_toggle;
 
-assign led = ~{usb_conerr, report_toggle};
+assign led = ~{UART_RXD, usb_conerr, report_toggle};
 
 endmodule

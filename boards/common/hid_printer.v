@@ -2,7 +2,7 @@
 module hid_printer (
     input clk,
     input resetn,
-    input uart_tx,
+    output uart_tx,
     input [1:0] usb_type, 
     input usb_report,
     input [7:0] key_modifiers,
