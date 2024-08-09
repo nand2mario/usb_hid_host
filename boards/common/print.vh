@@ -108,7 +108,7 @@ always @(posedge print_clk) begin
         seq_head <= seq_head + 8'd1;
     if (seq_head!=seq_tail && !uart_bz) begin
         uart_en <= 1'b1;
-        total <= total + 1;
+        total <= ((total + 1) & 8'hff);
     end
 end
 

@@ -138,7 +138,7 @@ always @(posedge usbclk) begin : process_in_data
                 // TODO: add any special handling if needed 
                 // (using the detected controller type in 'dev')                
             end
-            rcvct <= rcvct + 1;
+            rcvct <= ((rcvct + 1) & 4'b1111);
         end
     end
     if(~data_rdy && data_rdy_r && typ != 0)    // falling edge of ukp data ready
@@ -244,8 +244,8 @@ module ukp(
                         insth <= inst;
                         if(inst==1) state <= S_LDI0;						// op=ldi
                         if(inst==3) begin sadr <= 3; state <= S_S0; end		// op=out4
-                        if(inst==4) begin ug <= 9; up <= 0; um <= 0; end
-                        if(inst==5) begin ug <= 0; end
+                        if(inst==4) begin ug <= 1; up <= 0; um <= 0; end    // op=out0
+                        if(inst==5) begin ug <= 0; end                      // op=hiz
                         if(inst==6) begin sadr <= 7; state <= S_S0; end		// op=outb
                         if (inst[3:2]==2'b10) begin							// op=10xx(BZ,BC,BNAK,DJNZ)
                             state <= S_B0;
@@ -287,7 +287,7 @@ module ukp(
                 endcase
                 // pc control
                 if (mbit==0) begin 
-                    if(jmppc) wpc <= pc + 4;
+                    if(jmppc) wpc <= ((pc + 4) & 14'h3fff);
                     if (next | branch | retpc) begin
                         if(retpc) pc <= wpc;					// ret
                         else if(branch)
@@ -295,7 +295,7 @@ module ukp(
                                 pc <= { inst, lb4, lb4w, 2'b00 };
                             else								// branch
                                 pc <= { 4'b0000, inst, lb4, 2'b00 };
-                        else	pc <= pc + 1;					// next
+                        else	pc <= ((pc + 1) & 14'h3fff);	// next
                         inst_ready <= 0;
                     end
                 end
@@ -305,7 +305,7 @@ module ukp(
             if (mbit==1 && timing == 0) begin
                 if(ug==0) nrztxct <= 0;
                 else
-                    if(dbit) nrztxct <= nrztxct + 1;
+                    if(dbit) nrztxct <= ((nrztxct + 1) & 3'b111);
                     else     nrztxct <= 0;
                 if(insth == 4'd6) begin
                     if(nrztxct!=6) begin up <= dbit ?  up : ~up; um <= dbit ? ~up :  up; end
@@ -323,17 +323,17 @@ module ukp(
                 bitadr <= 0; nak <= 1; nrzrxct <= 0;
             end else 
                 if(ug==0 && dmi!=dmid) timing <= 1;
-                else                   timing <= timing + 1;
+                else                   timing <= ((timing + 1) & 3'b111);
             // IN instruction
             if (sample) begin
                 if (bitadr == 8) nak <= dmi;
                 if(nrzrxct!=6) begin
                     data[6:0] <= data[7:1]; 
                     data[7] <= dmis ~^ dmi;		    // ~^/^~ is XNOR, testing bit equality
-                    bitadr <= bitadr + 1; nrzon <= 0;
+                    bitadr <= ((bitadr + 1) & 7'h7f); nrzon <= 0;
                 end else nrzon <= 1;
                 dmis <= dmi;
-                if(dmis ~^ dmi) nrzrxct <= nrzrxct + 1;
+                if(dmis ~^ dmi) nrzrxct <= ((nrzrxct + 1) & 3'b111);
                 else           nrzrxct <= 0;
                 if (~dmi && ~dpi) ukprdy <= 0;      // SE0: packet is finished. Mouses send length 4 reports.
             end
@@ -343,7 +343,7 @@ module ukp(
             end
             if ((bitadr>11 & bitadr[2:0] == 3'b000) & (timing == 2)) ukpdat <= data;
             // Timing
-            interval <= interval_cy ? 0 : interval + 1;
+            interval <= interval_cy ? 0 : ((interval + 1) & 14'h3fff);
             record1 <= record;
             if (~record & record1) bank <= ~bank;
             // Connection status & WDT
@@ -352,7 +352,7 @@ module ukp(
             if (ukprdy && ~ukprdyd || inst_ready && state == S_OPCODE && inst == 4'b0010) 
                 conct <= 0;     // reset watchdog on data received or START instruction
             else begin 
-                if(conct[23:22]!=2'b11) conct <= conct + 1;
+                if(conct[23:22]!=2'b11) conct <= ((conct + 1) & 24'hffffff);
                 else begin pc <= 0; conct <= 0; end		// !! WDT ON
             end 
         end

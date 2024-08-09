@@ -46,7 +46,7 @@ always @(posedge clk) begin
     if (tx_clkcnt >= TX_CLK_MAX)
         tx_clkcnt <= 0;
     else
-        tx_clkcnt <= tx_clkcnt + 1;
+        tx_clkcnt <= ((tx_clkcnt + 1) & 9'h1ff);
 end
     
 

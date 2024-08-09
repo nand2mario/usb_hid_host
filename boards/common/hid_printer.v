@@ -15,7 +15,7 @@ module hid_printer (
 );
 
 reg [22:0] cnt;
-always @(posedge clk) cnt <= cnt + 1;
+always @(posedge clk) cnt <= ((cnt + 1) & 23'h7fffff);
 
 `include "print.vh"
 defparam tx.uart_freq=115200;
@@ -50,7 +50,7 @@ always @(posedge clk) begin
                 start_print <= 0;
             end
         end else
-            timer <= timer + 1;
+            timer <= ((timer + 1) & 20'hfffff);
 
         // Simple ways to handle HID inputs
         if (usb_report) begin

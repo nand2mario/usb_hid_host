@@ -4,9 +4,9 @@ function [7:0] scancode2char(input [7:0] scancode, input [7:0] modifiers);
     reg [7:0] a;
     if (scancode >= 4 && scancode <= 29) begin   // a-z
         if (modifiers == 0)
-            a = scancode - 4 + 97;             // a: 97, A: 65
+            a = ((scancode - 4 + 97) & 8'hff);   // a: 97, A: 65
         else if ((modifiers & SHIFT_MASK) && (modifiers & ~SHIFT_MASK) == 0)
-            a = scancode - 4 + 65;
+            a = ((scancode - 4 + 65) & 8'hff);
     end else if (modifiers == 0) begin
         case (scancode)
             30: a = "1";
