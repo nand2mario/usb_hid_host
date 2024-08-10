@@ -3,7 +3,6 @@ module uart_tx_V2(
     input wire [7:0] din,
     input wire wr_en,
     output wire tx_busy,
-
     output reg tx_p    
 );
 
@@ -11,33 +10,33 @@ initial begin
     tx_p = 1'b1;
 end
 
-parameter clk_freq = 12000000;
+parameter clk_freq  = 12000000;
 parameter uart_freq = 115200;
 
-localparam STATE_IDLE	= 2'b00;
-localparam STATE_START	= 2'b01;
-localparam STATE_DATA	= 2'b10;
-localparam STATE_STOP	= 2'b11;
+localparam TX_CLK_MAX = (clk_freq / uart_freq) - 1;
+localparam TX_CLK_WID = $clog2(TX_CLK_MAX);
+
+localparam STATE_IDLE	= 2'd0;
+localparam STATE_START	= 2'd1;
+localparam STATE_DATA	= 2'd2;
+localparam STATE_STOP	= 2'd3;
 
 reg[7:0] localdin;
 reg localwr_en;
 
-//always@(posedge clk)begin
-always@(*)begin	
+//always @(*) begin	
+always @(posedge clk) begin
     localdin<=din;
     localwr_en<=wr_en;
 end
 
-reg [7:0] data= 8'h00;
-reg [2:0] bitpos= 3'h0;
-reg [1:0] state= STATE_IDLE;
+reg [7:0] data   = 8'h00;
+reg [2:0] bitpos = 3'h0;
+reg [1:0] state  = STATE_IDLE;
+
+reg[TX_CLK_WID-1:0] tx_clkcnt; // 7 bits is enough for 12000000/115200=104.1666 -> 105
 
 wire tx_clk;
-
-localparam TX_CLK_MAX = (clk_freq / uart_freq)-1;
-
-reg[$clog2(TX_CLK_MAX+1)+1:0] tx_clkcnt;
-
 assign tx_clk = (tx_clkcnt == 0);
 
 initial tx_clkcnt=0;
@@ -46,7 +45,7 @@ always @(posedge clk) begin
     if (tx_clkcnt >= TX_CLK_MAX)
         tx_clkcnt <= 0;
     else
-        tx_clkcnt <= ((tx_clkcnt + 1) & 9'h1ff);
+        tx_clkcnt <= ((tx_clkcnt + 1) & {TX_CLK_WID{1'b1}});
 end
     
 

@@ -1,8 +1,8 @@
 
 module hid_printer (
+    output uart_tx,
     input clk,
     input resetn,
-    output uart_tx,
     input [1:0] usb_type, 
     input usb_report,
     input [7:0] key_modifiers,
@@ -11,15 +11,15 @@ module hid_printer (
     input signed [7:0] mouse_dx,
     input signed [7:0] mouse_dy,
     input game_l, game_r, game_u, game_d,
-    input game_a, game_b, game_x, game_y, game_sel, game_sta
+    input game_a, game_b, game_x, game_y, 
+    input game_sel, game_sta
+
+//  , input [63:0] hid_report
 );
 
-reg [22:0] cnt;
-always @(posedge clk) cnt <= ((cnt + 1) & 23'h7fffff);
 
 `include "print.vh"
-defparam tx.uart_freq=115200;
-defparam tx.clk_freq=12000000;
+
 assign print_clk = clk;
 assign uart_tx = uart_txp;
 
@@ -40,10 +40,13 @@ reg [9:0] game_btns_r;
 wire [9:0] game_btns = {game_l, game_r, game_u, game_d, game_a, game_b, 
                         game_x, game_y, game_sel, game_sta};
 
+//reg [22:0] cnt; // print raw reports
+
 always @(posedge clk) begin
-    if(~resetn) begin
-        `print("usb_hid_host demo. Connect keyboard, mouse or gamepad.\n",STR);
+    if (~resetn) begin
+        `print("usb_hid_host demo. Connect keyboard, mouse or gamepad.\x0d\x0a",STR); // "\r\n" does not work
     end else begin
+        // Sequence timer for print delay
         if (timer == 20'hfffff) begin
             if (start_print) begin
                 timer <= 0;
@@ -52,9 +55,11 @@ always @(posedge clk) begin
         end else
             timer <= ((timer + 1) & 20'hfffff);
 
+        // print raw reports
+//        cnt <= ((cnt + 1) & 23'h7fffff);
+
         // Simple ways to handle HID inputs
         if (usb_report) begin
-
             case (usb_type) 
             1: begin        // keyboard
                 // just catch all keydown events. no auto-repeat. no capslock. 
@@ -82,8 +87,8 @@ always @(posedge clk) begin
                     start_print <= 1;
                 game_btns_r <= game_btns;
             end
-            endcase
-        end
+            endcase // usb_type
+        end // if usb_report
 
         // print result to UART
         case (usb_type)
@@ -92,41 +97,46 @@ always @(posedge clk) begin
             keyascii <= 0;
             start_print <= 0;
            end
-
-        2:  case (timer)                                    // print mouse position
-            20'h00000: `print("\x0dMouse: x=", STR);        // there's no \r ...
-            20'h10000: `print({6'b0, mouse_x[9:0]}, 2);
-            20'h20000: `print(", y=", STR);
-            20'h30000: `print({6'b0, mouse_y[9:0]}, 2);
-            20'h40000: `print(mouse_btn[0] ? " L" : " _", STR);
-            20'h50000: `print(mouse_btn[1] ? " R" : " _", STR);
-            20'h60000: `print(mouse_btn[2] ? " M        " : " _        ", STR);
-            endcase
+        2: case (timer)                                    // print mouse position
+           20'h00000: `print("\x0dMouse: x=", STR);        // Print CR (\r) to start at line
+           20'h10000: `print({6'b0, mouse_x[9:0]}, 2);
+           20'h20000: `print(", y=", STR);
+           20'h30000: `print({6'b0, mouse_y[9:0]}, 2);
+           20'h40000: `print(mouse_btn[0] ? " L" : " _", STR);
+           20'h50000: `print(mouse_btn[1] ? " R" : " _", STR);
+           20'h60000: `print(mouse_btn[2] ? " M" : " _", STR);
+           20'h70000: `print("\x0d\x0a", STR);             // CRLF (\r\n)
+           endcase
         3: case(timer)                                      // print gamepad status
-            20'h00000: `print("\x0dGamepad:", STR);
-            20'h10000: `print(game_l ? " L" : " _", STR);
-            20'h20000: `print(game_u ? " U" : " _", STR);
-            20'h30000: `print(game_r ? " R" : " _", STR);
-            20'h40000: `print(game_d ? " D" : " _", STR);
-            20'h50000: `print(game_a ? " A" : " _", STR);
-            20'h60000: `print(game_b ? " B" : " _", STR);
-            20'h70000: `print(game_x ? " X" : " _", STR);
-            20'h80000: `print(game_y ? " Y" : " _", STR);
-            20'h90000: `print(game_sel ? " SE" : " __", STR);
-            20'ha0000: `print(game_sta ? " ST" : " __", STR);
-            20'hb0000: `print("         ", STR);
-            endcase
-        endcase
-    end
+           20'h00000: `print("\x0dGamepad:", STR);
+           20'h10000: `print(game_l ? " L" : " _", STR);
+           20'h20000: `print(game_u ? " U" : " _", STR);
+           20'h30000: `print(game_r ? " R" : " _", STR);
+           20'h40000: `print(game_d ? " D" : " _", STR);
+           20'h50000: `print(game_a ? " A" : " _", STR);
+           20'h60000: `print(game_b ? " B" : " _", STR);
+           20'h70000: `print(game_x ? " X" : " _", STR);
+           20'h80000: `print(game_y ? " Y" : " _", STR);
+           20'h90000: `print(game_sel ? " SE" : " __", STR);
+           20'ha0000: `print(game_sta ? " ST" : " __", STR);
+           20'hb0000: `print("\x0d\x0a", STR);
+           endcase
+        endcase // usb_type
 
-    // print raw reports
-//    case (cnt[19:0])
-//    20'h00000: `print(hid_report, 8); 
-//    20'h10000: `print(", type=", STR); 
-//    20'h20000: `print({6'b0, usb_type}, 1); 
-//    20'hf0000: `print("\n", STR); 
-//    endcase
+        // print raw reports
+//        if (cnt[22:20] == 3'b100) begin
+//            case (cnt[19:0])
+//            20'h00000: `print("Last USB HID report: ", STR);
+//            20'h10000: `print(hid_report, 8); 
+//            20'h20000: `print(", type=", STR); 
+//            20'h30000: `print({6'b0, usb_type}, HEX); 
+//            20'h40000: `print("\x0d\x0a", STR); 
+//            endcase
+//        end
 
+    end // resetn not active
 end
+
+
 
 endmodule
