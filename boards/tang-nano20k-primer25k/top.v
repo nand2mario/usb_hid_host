@@ -6,14 +6,14 @@
 module usb_hid_host_demo (
     input sys_clk,
     // input sys_resetn,
-    // input s1,
+    input s1,
 
     // UART
-    input UART_RXD,
+    // input UART_RXD,
     output UART_TXD,
 
     // LEDs
-    output [2:0] led,
+    output [3:0] led,
 
     // USB
     inout usbdm,
@@ -21,21 +21,21 @@ module usb_hid_host_demo (
 
 );
 
+wire clk = sys_clk;
+//wire clk_sdram = ~sys_clk;  
+wire clk_usb;
+
 reg sys_resetn = 0;
 always @(posedge clk) begin
     sys_resetn <= 1;
 end
-
-wire clk = sys_clk;
-wire clk_sdram = ~sys_clk;  
-wire clk_usb;
 
 // USB clock 12Mhz
 gowin_pll_usb pll_usb (
     .clkout(clk_usb),      // 12Mhz usb clock
     .clkoutp(),            // not connected
     .lock(),               // not connected
-    .reset(~sys_resetn),
+    .reset(1'b0),          // not connected
     .clkin(sys_clk)
 );
 
@@ -44,7 +44,6 @@ wire [7:0] key_modifiers, key1, key2, key3, key4;
 wire [7:0] mouse_btn;
 wire signed [7:0] mouse_dx, mouse_dy;
 wire [63:0] hid_report;
-wire [7:0] hid_regs [7];
 
 usb_hid_host usb (
     .usbclk(clk_usb), .usbrst_n(sys_resetn),
@@ -66,11 +65,12 @@ hid_printer prt (
     .game_l(game_l), .game_r(game_r), .game_u(game_u), .game_d(game_d),
     .game_a(game_a), .game_b(game_b), .game_x(game_x), .game_y(game_y), 
     .game_sel(game_sel), .game_sta(game_sta)
+//    , .hid_report(hid_report)
 );
 
 reg report_toggle;      // blinks whenever there's a report
 always @(posedge clk_usb) if (usb_report) report_toggle <= ~report_toggle;
 
-assign led = ~{UART_RXD, usb_conerr, report_toggle};
+assign led = ~{~UART_TXD, s1, usb_conerr, report_toggle};
 
 endmodule
