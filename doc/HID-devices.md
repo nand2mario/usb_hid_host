@@ -3,9 +3,8 @@
 Descriptors read on Windows 10 with:
 > UsbTreeView V4.3.4 - Shows the USB Device Tree
 >
-> Freeware by Uwe Sieber, mail@uwe-sieber.de  
-> https://www.uwe-sieber.de/usbtreeview_e.html
-
+> Freeware by Uwe Sieber, <mail@uwe-sieber.de>  
+> <https://www.uwe-sieber.de/usbtreeview_e.html>
 
 ## TRUST Keyboard (trust.com/20517)
 
@@ -838,6 +837,384 @@ Error                    : ERROR_GEN_FAILURE  (because the device is Full-Speed 
 
       -------------------- String Descriptors -------------------
 none
+```
+
+----
+
+## Steam Controller (USB dongle, Valve Corp, FD553C1410, Model 1002)
+
+* According to UsbTreeView, the dongle only supports USB full speed.
+* Interesting: The first inteface descriptor is for a HID boot device/keyboard.
+
+```text
+    ---------------------- Device Descriptor ----------------------
+bLength                  : 0x12 (18 bytes)
+bDescriptorType          : 0x01 (Device Descriptor)
+bcdUSB                   : 0x200 (USB Version 2.0)
+bDeviceClass             : 0x00 (defined by the interface descriptors)
+bDeviceSubClass          : 0x00
+bDeviceProtocol          : 0x00
+bMaxPacketSize0          : 0x40 (64 bytes)
+idVendor                 : 0x28DE (Valve Corporation)
+idProduct                : 0x1142
+bcdDevice                : 0x0001
+iManufacturer            : 0x01 (String Descriptor 1)
+ Language 0x0409         : "Valve Software"
+iProduct                 : 0x02 (String Descriptor 2)
+ Language 0x0409         : "Steam Controller"
+iSerialNumber            : 0x00 (No String Descriptor)
+bNumConfigurations       : 0x01 (1 Configuration)
+Data (HexDump)           : 12 01 00 02 00 00 00 40 DE 28 42 11 01 00 01 02   .......@.(B.....
+                           00 01                                             ..
+
+    ------------------ Configuration Descriptor -------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x02 (Configuration Descriptor)
+wTotalLength             : 0x0086 (134 bytes)
+bNumInterfaces           : 0x05 (5 Interfaces)
+bConfigurationValue      : 0x01 (Configuration 1)
+iConfiguration           : 0x00 (No String Descriptor)
+bmAttributes             : 0xA0
+ D7: Reserved, set 1     : 0x01
+ D6: Self Powered        : 0x00 (no)
+ D5: Remote Wakeup       : 0x01 (yes)
+ D4..0: Reserved, set 0  : 0x00
+MaxPower                 : 0x32 (100 mA)
+Data (HexDump)           : 09 02 86 00 05 01 00 A0 32 09 04 00 00 01 03 01   ........2.......
+                           01 00 09 21 11 01 00 01 22 79 00 07 05 81 03 09   ...!...."y......
+                           00 02 09 04 01 00 01 03 00 00 00 09 21 11 01 00   ............!...
+                           01 22 21 00 07 05 82 03 40 00 06 09 04 02 00 01   ."!.....@.......
+                           03 00 00 00 09 21 11 01 00 01 22 21 00 07 05 83   .....!...."!....
+                           03 40 00 06 09 04 03 00 01 03 00 00 00 09 21 11   .@............!.
+                           01 00 01 22 21 00 07 05 84 03 40 00 06 09 04 04   ..."!.....@.....
+                           00 01 03 00 00 00 09 21 11 01 00 01 22 21 00 07   .......!...."!..
+                           05 85 03 40 00 06                                 ...@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x00 (Interface 0)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x01 (Boot Interface)
+bInterfaceProtocol       : 0x01 (Keyboard)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 00 00 01 03 01 01 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 79 00                        .!...."y.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x0079 (121 bytes)
+  05 01             Usage Page (Generic Desktop Controls)
+  09 06             Usage (Keyboard)
+  95 01             Report Count (1)
+  A1 01             Collection (Application)
+  85 01               Report ID (0x01)
+  05 07               Usage Page (Keyboard)
+  19 E0               Usage Minimum (-32)
+  29 E7               Usage Maximum (-25)
+  15 00               Logical Minimum (0)
+  25 01               Logical Maximum (1)
+  75 01               Report Size (1)
+  95 08               Report Count (8)
+  81 02               Input (Var)
+  95 01               Report Count (1)
+  75 08               Report Size (8)
+  81 01               Input (Const)
+  95 05               Report Count (5)
+  75 01               Report Size (1)
+  05 08               Usage Page (LEDs)
+  19 01               Usage Minimum (1)
+  29 05               Usage Maximum (5)
+  91 02               Output (Var)
+  95 01               Report Count (1)
+  75 03               Report Size (3)
+  91 01               Output (Const)
+  95 06               Report Count (6)
+  75 08               Report Size (8)
+  15 00               Logical Minimum (0)
+  25 65               Logical Maximum (101)
+  05 07               Usage Page (Keyboard)
+  19 00               Usage Minimum (0)
+  29 65               Usage Maximum (101)
+  81 00               Input ()
+  C0                End Collection
+  05 01             Usage Page (Generic Desktop Controls)
+  09 02             Usage (Mouse)
+  A1 01             Collection (Application)
+  85 02               Report ID (0x02)
+  09 01               Usage (Pointer)
+  A1 00               Collection (Physical)
+  05 09                 Usage Page (Buttons)
+  19 01                 Usage Minimum (1)
+  29 05                 Usage Maximum (5)
+  15 00                 Logical Minimum (0)
+  25 01                 Logical Maximum (1)
+  95 05                 Report Count (5)
+  75 01                 Report Size (1)
+  81 02                 Input (Var)
+  95 01                 Report Count (1)
+  75 03                 Report Size (3)
+  81 01                 Input (Const)
+  05 01                 Usage Page (Generic Desktop Controls)
+  09 30                 Usage (Direction-X)
+  09 31                 Usage (Direction-Y)
+  09 38                 Usage (Wheel)
+  15 81                 Logical Minimum (-127)
+  25 7F                 Logical Maximum (127)
+  75 08                 Report Size (8)
+  95 03                 Report Count (3)
+  81 06                 Input (Var, Rel)
+  C0                  End Collection
+  C0                End Collection
+Data (HexDump)           : 05 01 09 06 95 01 A1 01 85 01 05 07 19 E0 29 E7   ..............).
+                           15 00 25 01 75 01 95 08 81 02 95 01 75 08 81 01   ..%.u.......u...
+                           95 05 75 01 05 08 19 01 29 05 91 02 95 01 75 03   ..u.....).....u.
+                           91 01 95 06 75 08 15 00 25 65 05 07 19 00 29 65   ....u...%e....)e
+                           81 00 C0 05 01 09 02 A1 01 85 02 09 01 A1 00 05   ................
+                           09 19 01 29 05 15 00 25 01 95 05 75 01 81 02 95   ...)...%...u....
+                           01 75 03 81 01 05 01 09 30 09 31 09 38 15 81 25   .u......0.1.8..%
+                           7F 75 08 95 03 81 06 C0 C0                        .u.......
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x81 (Direction=IN EndpointID=1)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0009 (9 bytes)
+bInterval                : 0x02 (2 ms)
+Data (HexDump)           : 07 05 81 03 09 00 02                              .......
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x01 (Interface 1)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 01 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 21 00                        .!...."!.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x0021 (33 bytes)
+  06 00 FF          Usage Page (Vendor Defined)
+  09 01             Usage (unk)
+  A1 01             Collection (Application)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  81 02               Input (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  91 02               Output (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  B1 02               Feature (Var)
+  C0                End Collection
+Data (HexDump)           : 06 00 FF 09 01 A1 01 15 00 26 FF 00 75 08 95 40   .........&..u..@
+                           09 01 81 02 95 40 09 01 91 02 95 40 09 01 B1 02   .....@.....@....
+                           C0                                                .
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x82 (Direction=IN EndpointID=2)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x06 (6 ms)
+Data (HexDump)           : 07 05 82 03 40 00 06                              ....@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x02 (Interface 2)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 02 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 21 00                        .!...."!.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x0021 (33 bytes)
+  06 00 FF          Usage Page (Vendor Defined)
+  09 01             Usage (unk)
+  A1 01             Collection (Application)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  81 02               Input (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  91 02               Output (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  B1 02               Feature (Var)
+  C0                End Collection
+Data (HexDump)           : 06 00 FF 09 01 A1 01 15 00 26 FF 00 75 08 95 40   .........&..u..@
+                           09 01 81 02 95 40 09 01 91 02 95 40 09 01 B1 02   .....@.....@....
+                           C0                                                .
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x83 (Direction=IN EndpointID=3)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x06 (6 ms)
+Data (HexDump)           : 07 05 83 03 40 00 06                              ....@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x03 (Interface 3)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 03 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 21 00                        .!...."!.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x0021 (33 bytes)
+  06 00 FF          Usage Page (Vendor Defined)
+  09 01             Usage (unk)
+  A1 01             Collection (Application)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  81 02               Input (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  91 02               Output (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  B1 02               Feature (Var)
+  C0                End Collection
+Data (HexDump)           : 06 00 FF 09 01 A1 01 15 00 26 FF 00 75 08 95 40   .........&..u..@
+                           09 01 81 02 95 40 09 01 91 02 95 40 09 01 B1 02   .....@.....@....
+                           C0                                                .
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x84 (Direction=IN EndpointID=4)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x06 (6 ms)
+Data (HexDump)           : 07 05 84 03 40 00 06                              ....@..
+
+        ---------------- Interface Descriptor -----------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x04 (Interface Descriptor)
+bInterfaceNumber         : 0x04 (Interface 4)
+bAlternateSetting        : 0x00
+bNumEndpoints            : 0x01 (1 Endpoint)
+bInterfaceClass          : 0x03 (HID - Human Interface Device)
+bInterfaceSubClass       : 0x00 (None)
+bInterfaceProtocol       : 0x00 (None)
+iInterface               : 0x00 (No String Descriptor)
+Data (HexDump)           : 09 04 04 00 01 03 00 00 00                        .........
+
+        ------------------- HID Descriptor --------------------
+bLength                  : 0x09 (9 bytes)
+bDescriptorType          : 0x21 (HID Descriptor)
+bcdHID                   : 0x0111 (HID Version 1.11)
+bCountryCode             : 0x00 (00 = not localized)
+bNumDescriptors          : 0x01
+Data (HexDump)           : 09 21 11 01 00 01 22 21 00                        .!...."!.
+Descriptor 1:
+bDescriptorType          : 0x22 (Class=Report)
+wDescriptorLength        : 0x0021 (33 bytes)
+  06 00 FF          Usage Page (Vendor Defined)
+  09 01             Usage (unk)
+  A1 01             Collection (Application)
+  15 00               Logical Minimum (0)
+  26 FF 00            Logical Maximum (255)
+  75 08               Report Size (8)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  81 02               Input (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  91 02               Output (Var)
+  95 40               Report Count (64)
+  09 01               Usage (unk)
+  B1 02               Feature (Var)
+  C0                End Collection
+Data (HexDump)           : 06 00 FF 09 01 A1 01 15 00 26 FF 00 75 08 95 40   .........&..u..@
+                           09 01 81 02 95 40 09 01 91 02 95 40 09 01 B1 02   .....@.....@....
+                           C0                                                .
+
+        ----------------- Endpoint Descriptor -----------------
+bLength                  : 0x07 (7 bytes)
+bDescriptorType          : 0x05 (Endpoint Descriptor)
+bEndpointAddress         : 0x85 (Direction=IN EndpointID=5)
+bmAttributes             : 0x03 (TransferType=Interrupt)
+wMaxPacketSize           : 0x0040 (64 bytes)
+bInterval                : 0x06 (6 ms)
+Data (HexDump)           : 07 05 85 03 40 00 06                              ....@..
+
+      -------------------- String Descriptors -------------------
+             ------ String Descriptor 0 ------
+bLength                  : 0x04 (4 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language ID[0]           : 0x0409 (English - United States)
+Data (HexDump)           : 04 03 09 04                                       ....
+             ------ String Descriptor 1 ------
+bLength                  : 0x1E (30 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "Valve Software"
+Data (HexDump)           : 1E 03 56 00 61 00 6C 00 76 00 65 00 20 00 53 00   ..V.a.l.v.e. .S.
+                           6F 00 66 00 74 00 77 00 61 00 72 00 65 00         o.f.t.w.a.r.e.
+             ------ String Descriptor 2 ------
+bLength                  : 0x22 (34 bytes)
+bDescriptorType          : 0x03 (String Descriptor)
+Language 0x0409          : "Steam Controller"
+Data (HexDump)           : 22 03 53 00 74 00 65 00 61 00 6D 00 20 00 43 00   ".S.t.e.a.m. .C.
+                           6F 00 6E 00 74 00 72 00 6F 00 6C 00 6C 00 65 00   o.n.t.r.o.l.l.e.
+                           72 00                                             r.
 ```
 
 ----
