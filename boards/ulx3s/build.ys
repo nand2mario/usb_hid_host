@@ -1,0 +1,12 @@
+
+verilog_defaults -add -I../common -I../../src
+
+read_verilog top.v
+read_verilog clock.v
+read_verilog ../common/hid_printer.v
+read_verilog ../common/uart_tx_V2.v
+read_verilog ../../src/usb_hid_host.v
+read_verilog ../../src/usb_hid_host_rom.v
+
+synth_ecp5 -top top -json usb_hid_host_demo.json
+
