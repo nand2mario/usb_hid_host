@@ -1,5 +1,5 @@
-parameter STR = 0;
-parameter HEX = 1;
+localparam STR = 1'b0;
+localparam HEX = 1'b1;
 
 wire print_clk;
 
@@ -15,11 +15,11 @@ reg spin_state=0;
 reg[6:0] print_length;
 reg print_type;
 
-parameter PRINT_IDLE_STATE = 0;
-parameter PRINT_WAIT_STATE = 1;
-parameter PRINT_WORK_STATE = 2;
-parameter PRINT_CONV_STATE = 3;
-reg[1:0] print_state=PRINT_IDLE_STATE;
+localparam PRINT_IDLE_STATE = 2'b00;
+localparam PRINT_WAIT_STATE = 2'b01;
+localparam PRINT_WORK_STATE = 2'b10;
+localparam PRINT_CONV_STATE = 2'b11;
+reg[1:0] print_state = PRINT_IDLE_STATE;
 
 wire[7:0] hex_lib[15:0];
 assign hex_lib[4'h0] = 8'h30;
@@ -108,7 +108,7 @@ always @(posedge print_clk) begin
         seq_head <= seq_head + 8'd1;
     if (seq_head!=seq_tail && !uart_bz) begin
         uart_en <= 1'b1;
-        total <= total + 1;
+        total <= ((total + 1) & 8'hff);
     end
 end
 
