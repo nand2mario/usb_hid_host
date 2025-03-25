@@ -13,25 +13,20 @@ module usb_hid_host (
     input  usbclk,		            // 12MHz clock
     input  usbrst_n,	            // reset
     inout  usb_dm, usb_dp,          // USB D- and D+
-
     output reg [1:0] typ,           // device type. 0: no device, 1: keyboard, 2: mouse, 3: gamepad
     output reg report,              // pulse after report received from device. 
                                     // key_*, mouse_*, game_* valid depending on typ
     output conerr,                  // connection or protocol error
-
     // keyboard
     output reg [7:0] key_modifiers,
     output reg [7:0] key1, key2, key3, key4,
-
     // mouse
     output reg [7:0] mouse_btn,     // {5'bx, middle, right, left}
     output reg signed [7:0] mouse_dx,      // signed 8-bit, cleared after `report` pulse
     output reg signed [7:0] mouse_dy,      // signed 8-bit, cleared after `report` pulse
-
     // gamepad 
     output reg game_l, game_r, game_u, game_d,  // left right up down
     output reg game_a, game_b, game_x, game_y, game_sel, game_sta,  // buttons
-
     // debug
     output [63:0] dbg_hid_report	// last HID report
 );
@@ -57,6 +52,10 @@ reg  [7:0] dat[8];		// data in last response
 assign dbg_hid_report = {dat[7], dat[6], dat[5], dat[4], dat[3], dat[2], dat[1], dat[0]};
 // assign dbg_regs = regs;
 
+localparam TYP_NONE = 2'b00;
+localparam TYP_KEYB = 2'b01;
+localparam TYP_MOUS = 2'b10;
+localparam TYP_GAME = 2'b11;
 // Gamepad types, see response_recognition below
 // localparam D_GENERIC = 0;
 // localparam D_GAMEPAD = 1;			
@@ -78,7 +77,7 @@ always @(posedge usbclk) begin : process_in_data
         if(data_strobe && ~data_strobe_r) begin  // rising edge of ukp data strobe
             dat[rcvct] <= ukpdat;
 
-            if (typ == 1) begin     // keyboard
+            if (typ == TYP_KEYB) begin     // keyboard
                 case (rcvct)
                 0: key_modifiers <= ukpdat;
                 2: key1 <= ukpdat;
@@ -86,13 +85,13 @@ always @(posedge usbclk) begin : process_in_data
                 4: key3 <= ukpdat;
                 5: key4 <= ukpdat;
                 endcase
-            end else if (typ == 2) begin    // mouse
+            end else if (typ == TYP_MOUS) begin    // mouse
                 case (rcvct)
                 0: mouse_btn <= ukpdat;
                 1: mouse_dx <= ukpdat;
                 2: mouse_dy <= ukpdat;
                 endcase
-            end else if (typ == 3) begin    // gamepad
+            end else if (typ == TYP_GAME) begin    // gamepad
                 // A typical report layout:
                 // - d[3] is X axis (0: left, 255: right)
                 // - d[4] is Y axis
@@ -138,36 +137,41 @@ always @(posedge usbclk) begin : process_in_data
                 // TODO: add any special handling if needed 
                 // (using the detected controller type in 'dev')                
             end
-            rcvct <= rcvct + 1;
+            rcvct <= ((rcvct + 1) & 4'b1111);
         end
     end
-    if(~data_rdy && data_rdy_r && typ != 0)    // falling edge of ukp data ready
+    if(~data_rdy && data_rdy_r && typ != TYP_NONE)    // falling edge of ukp data ready
         report <= 1;
 end
 
 reg save_delayed;
 reg connected_r;
-always @(posedge usbclk) begin : response_recognition
+always @(posedge usbclk) begin : response_recognition // (this is a SystemVerilog block name)
     save_delayed <= save;
     if (save) begin
         regs[save_r] <= dat[save_b];
     end else if (save_delayed && ~save && save_r == 6) begin     
         // falling edge of save for bInterfaceProtocol
-        if (regs[4] == 3) begin  // bInterfaceClass. 3: HID, other: non-HID
-            if (regs[5] == 1)    // bInterfaceSubClass. 1: Boot device
-                typ <= regs[6] == 1 ? 1 : 2;     // bInterfaceProtocol. 1: keyboard, 2: mouse
-            else
-                typ <= 3;       // gamepad
+        if (regs[4] == 3) begin        // bInterfaceClass. 3: HID, other: non-HID
+            if (regs[5] == 1) begin    // bInterfaceSubClass. 1: Boot device
+                // bInterfaceProtocol. 1: keyboard, 2: mouse
+                if      (regs[6] == 1) typ <= TYP_KEYB; 
+                else if (regs[6] == 2) typ <= TYP_MOUS;
+                else                   typ <= TYP_NONE;
+            end else
+                typ <= TYP_GAME;       // gamepad
         end else
-            typ <= 0;                   
+            typ <= TYP_NONE;           // TODO: eg XBOX controller has 0xFF (proprietary) ID       
     end
     connected_r <= connected;
     if (~connected & connected_r) typ <= 0;   // clear device type on disconnect
 end
 
-endmodule
+endmodule // usb_hid_host
 
-module ukp(
+//---------------------------------------------------------------------
+
+module ukp (
     input usbrst_n,
     input usbclk,				// 12MHz clock
     inout usb_dp, usb_dm,		// D+, D-
@@ -181,17 +185,37 @@ module ukp(
     output conerr
 );
 
-    parameter S_OPCODE = 0;
-    parameter S_LDI0 = 1;
-    parameter S_LDI1 = 2;
-    parameter S_B0 = 3;
-    parameter S_B1 = 4;
-    parameter S_B2 = 5;
-    parameter S_S0 = 6;
-    parameter S_S1 = 7;
-    parameter S_S2 = 8;
-    parameter S_TOGGLE0 = 9;
-    parameter S_TOGGLE1 = 10;
+    // state machine states
+    localparam S_OPCODE  = 4'd0;
+    localparam S_LDI0    = 4'd1;
+    localparam S_LDI1    = 4'd2;
+    localparam S_B0      = 4'd3;
+    localparam S_B1      = 4'd4;
+    localparam S_B2      = 4'd5;
+    localparam S_S0      = 4'd6;
+    localparam S_S1      = 4'd7;
+    localparam S_S2      = 4'd8;
+    localparam S_TOGGLE0 = 4'd9;
+    localparam S_TOGGLE1 = 4'd10;
+
+    // OPCODES
+    localparam OP_NOP    = 4'h0;    // NOP -- No operation
+    localparam OP_LDI    = 4'h1;    // LDI cc -- Load 8-bit constant into W
+    localparam OP_START	 = 4'h2;    // START -- Wait until D- becomes 0 and clear the T counter
+    localparam OP_OUT4   = 4'h3;    // OUT4 -- output 4 bits
+    localparam OP_OUT0	 = 4'h4;    // Output 0 on both D+ and D-
+    localparam OP_HIZ	 = 4'h5;    // Set both D+ and D- to hi-impedance
+    localparam OP_OUTB	 = 4'h6;    // Output a byte (8 bits)
+    localparam OP_RET	 = 4'h7;    // Return to the next instruction of last jump
+    localparam OP_BZ     = 4'h8;    // aa	Jump if D- is 0
+    localparam OP_BC     = 4'h9;    // aa	Jump if C flag is 1
+    localparam OP_BNAK   = 4'hA;    //  aa	Jump if previous response was NAK/STALL
+    localparam OP_DJNZ   = 4'hB;    // aa	Decrement W register, jump if not 0
+    localparam OP_TOGGLE = 4'hC;    // C f f --	Toggle C flag
+    localparam OP_SAVE   = 4'hC;    // C r b -- Save receive buffer byte b into output register r
+    localparam OP_IN     = 4'hD;    // IN -- Wait until the T counter reaches the sampling timing. If both D+ and D- are 0, proceed to the next instruction. Otherwise, decrement the W register and if it is 0, go to the next instruction.
+    localparam OP_WAIT	 = 4'hE;    // WAIT -- Wait for 1ms timing
+    localparam OP_JMP    = 4'hF;    // JMP aa -- Jump to address
 
     wire [3:0] inst;
     reg  [3:0] insth;
@@ -239,26 +263,26 @@ module ukp(
             save <= 0;		// ensure pulse
             if (inst_ready) begin
                 // Instruction decoding
-                case(state)
+                case (state)
                     S_OPCODE: begin
                         insth <= inst;
-                        if(inst==1) state <= S_LDI0;						// op=ldi
-                        if(inst==3) begin sadr <= 3; state <= S_S0; end		// op=out4
-                        if(inst==4) begin ug <= 9; up <= 0; um <= 0; end
-                        if(inst==5) begin ug <= 0; end
-                        if(inst==6) begin sadr <= 7; state <= S_S0; end		// op=outb
-                        if (inst[3:2]==2'b10) begin							// op=10xx(BZ,BC,BNAK,DJNZ)
+                        if (inst == OP_LDI) state <= S_LDI0;
+                        if (inst == OP_OUT4) begin sadr <= 3; state <= S_S0; end
+                        if (inst == OP_OUT0) begin ug <= 1; up <= 0; um <= 0; end
+                        if (inst == OP_HIZ) begin ug <= 0; end
+                        if (inst == OP_OUTB) begin sadr <= 7; state <= S_S0; end
+                        if (inst[3:2]==2'b10) begin // op=10xx(BZ,BC,BNAK,DJNZ)
                             state <= S_B0;
-                            case (inst[1:0])
-                                2'b00: cond <= ~dmi;
-                                2'b01: cond <= connected;
-                                2'b10: cond <= nak;
-                                2'b11: cond <= wk != 1;
+                            case (inst)
+                                OP_BZ:   cond <= ~dmi;
+                                OP_BC:   cond <= connected;
+                                OP_BNAK: cond <= nak;
+                                OP_DJNZ: cond <= wk != 1;
                             endcase
                         end
-                        if(inst==11 | inst==13 & sample) wk <= wk - 8'd1;	// op=DJNZ,IN
-                        if(inst==15) begin state <= S_B2; cond <= 1; end	// op=jmp
-                        if(inst==12) state <= S_TOGGLE0;
+                        if (inst == OP_DJNZ | inst == OP_IN & sample) wk <= wk - 8'd1;
+                        if (inst == OP_JMP) begin state <= S_B2; cond <= 1; end
+                        if (inst == OP_TOGGLE) state <= S_TOGGLE0;
                     end
                     // Instructions with operands
                     // ldi
@@ -273,86 +297,84 @@ module ukp(
                     S_S1: begin sb[7:4] <= inst; state <= S_S2; mbit <= 1; end
                     // toggle and save
                     S_TOGGLE0: begin 
-                        if (inst == 15) connected <= ~connected;// toggle
-                        else save_r <= inst;                    // save
+                        if (inst == 4'hF) connected <= ~connected;// toggle (C f f)
+                        else save_r <= inst;                    // save (C r b)
                         state <= S_TOGGLE1;
                       end
                     S_TOGGLE1: begin
-                        if (inst != 15) begin
-                            save_b <= inst;
-                            save <= 1;
-                        end
+                        if (inst != 4'hF) begin save_b <= inst; save <= 1; end
                         state <= S_OPCODE;
                     end
-                endcase
+                endcase // state
                 // pc control
                 if (mbit==0) begin 
-                    if(jmppc) wpc <= pc + 4;
+                    if (jmppc) wpc <= ((pc + 4) & 14'h3fff);
                     if (next | branch | retpc) begin
                         if(retpc) pc <= wpc;					// ret
-                        else if(branch)
-                            if(insth==15)						// jmp
+                        else if (branch)
+                            if (insth == OP_JMP)				// jmp
                                 pc <= { inst, lb4, lb4w, 2'b00 };
                             else								// branch
                                 pc <= { 4'b0000, inst, lb4, 2'b00 };
-                        else	pc <= pc + 1;					// next
+                        else	pc <= ((pc + 1) & 14'h3fff);	// next
                         inst_ready <= 0;
                     end
                 end
-            end
+            end // if (inst_ready)
             else inst_ready <= 1;
             // bit transmission (out4/outb)
-            if (mbit==1 && timing == 0) begin
-                if(ug==0) nrztxct <= 0;
+            if (mbit == 1 && timing == 0) begin
+                if (ug == 0) nrztxct <= 0;
                 else
-                    if(dbit) nrztxct <= nrztxct + 1;
-                    else     nrztxct <= 0;
+                    if (dbit) nrztxct <= ((nrztxct + 1) & 3'b111);
+                    else      nrztxct <= 0;
                 if(insth == 4'd6) begin
-                    if(nrztxct!=6) begin up <= dbit ?  up : ~up; um <= dbit ? ~up :  up; end
-                    else           begin up <= ~up; um <= up; nrztxct <= 0; end
+                    if (nrztxct!=6) begin up <= dbit ? up : ~up; um <= dbit ? ~up : up; end
+                    else            begin up <= ~up; um <= up; nrztxct <= 0; end
                 end else begin
                     up <=  sb[{1'b1,sadr[1:0]}]; um <= sb[sadr[2:0]];
                 end
-                ug <= 1'b1; 
-                if(nrztxct!=6) sadr <= sadr - 4'd1;
-                if(sadr==0) begin mbit <= 0; state <= S_OPCODE; end
+                ug <= 1; 
+                if (nrztxct != 6) sadr <= sadr - 4'd1;
+                if (sadr == 0)    begin mbit <= 0; state <= S_OPCODE; end
             end
             // start instruction
             dmid <= dmi;
-            if (inst_ready & state == S_OPCODE & inst == 4'b0010) begin // op=start 
+            if (inst_ready & state == S_OPCODE & inst == OP_START) begin
                 bitadr <= 0; nak <= 1; nrzrxct <= 0;
             end else 
-                if(ug==0 && dmi!=dmid) timing <= 1;
-                else                   timing <= timing + 1;
+                if (ug == 0 && dmi != dmid) timing <= 1;
+                else                        timing <= ((timing + 1) & 3'b111);
             // IN instruction
             if (sample) begin
                 if (bitadr == 8) nak <= dmi;
-                if(nrzrxct!=6) begin
+                if (nrzrxct != 6) begin
                     data[6:0] <= data[7:1]; 
                     data[7] <= dmis ~^ dmi;		    // ~^/^~ is XNOR, testing bit equality
-                    bitadr <= bitadr + 1; nrzon <= 0;
+                    bitadr <= ((bitadr + 1) & 7'h7f);
+                    nrzon <= 0;
                 end else nrzon <= 1;
                 dmis <= dmi;
-                if(dmis ~^ dmi) nrzrxct <= nrzrxct + 1;
-                else           nrzrxct <= 0;
+                if (dmis ~^ dmi) nrzrxct <= ((nrzrxct + 1) & 3'b111);
+                else             nrzrxct <= 0;
                 if (~dmi && ~dpi) ukprdy <= 0;      // SE0: packet is finished. Mouses send length 4 reports.
             end
-            if (ug==0) begin
+            if (ug == 0) begin
                 if(bitadr==24) ukprdy <= 1;			// ignore first 3 bytes
                 if(bitadr==88) ukprdy <= 0;			// output next 8 bytes
             end
-            if ((bitadr>11 & bitadr[2:0] == 3'b000) & (timing == 2)) ukpdat <= data;
+            if ((bitadr > 11 & bitadr[2:0] == 3'b000) & (timing == 2)) ukpdat <= data;
             // Timing
-            interval <= interval_cy ? 0 : interval + 1;
+            interval <= interval_cy ? 0 : ((interval + 1) & 14'h3fff);
             record1 <= record;
             if (~record & record1) bank <= ~bank;
             // Connection status & WDT
             ukprdyd <= ukprdy;
             nakd <= nak;
-            if (ukprdy && ~ukprdyd || inst_ready && state == S_OPCODE && inst == 4'b0010) 
+            if (ukprdy && ~ukprdyd || inst_ready && state == S_OPCODE && inst == OP_START) 
                 conct <= 0;     // reset watchdog on data received or START instruction
             else begin 
-                if(conct[23:22]!=2'b11) conct <= conct + 1;
+                if (conct[23:22] != 2'b11) conct <= ((conct + 1) & 24'hffffff);
                 else begin pc <= 0; conct <= 0; end		// !! WDT ON
             end 
         end

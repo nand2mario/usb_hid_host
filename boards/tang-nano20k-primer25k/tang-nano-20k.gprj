@@ -5,12 +5,12 @@
     <Version>5</Version>
     <Device name="GW2AR-18C" pn="GW2AR-LV18QN88C8/I7">gw2ar18c-000</Device>
     <FileList>
-        <File path="D:/Gowin/dev/usb_hid_host/boards/common/hid_printer.v" type="file.verilog" enable="1"/>
-        <File path="D:/Gowin/dev/usb_hid_host/boards/common/uart_tx_V2.v" type="file.verilog" enable="1"/>
+        <File path="../common/hid_printer.v" type="file.verilog" enable="1"/>
+        <File path="../common/uart_tx_V2.v" type="file.verilog" enable="1"/>
         <File path="nano20k/gowin_pll_usb.v" type="file.verilog" enable="1"/>
         <File path="top.v" type="file.verilog" enable="1"/>
-        <File path="D:/Gowin/dev/usb_hid_host/src/usb_hid_host.v" type="file.verilog" enable="1"/>
-        <File path="D:/Gowin/dev/usb_hid_host/src/usb_hid_host_rom.v" type="file.verilog" enable="1"/>
+        <File path="../../src/usb_hid_host.v" type="file.verilog" enable="1"/>
+        <File path="../../src/usb_hid_host_rom.v" type="file.verilog" enable="1"/>
         <File path="nano20k/nano2k.cst" type="file.cst" enable="1"/>
         <File path="nano20k/nano2k.sdc" type="file.sdc" enable="1"/>
     </FileList>
